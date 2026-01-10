@@ -4,7 +4,6 @@ export type MbtaClientOptions = {
 };
 
 export type RouteResponse = any; // keep loose initially, tighten later
-export type StopResponse = any;
 export type BusRouteResponse = any;
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
@@ -27,10 +26,6 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   async function fetchRouteData(routeId: string): Promise<RouteResponse> {
     // Start simple. You’ll almost certainly tailor includes/fields once you port a notebook.
     return getJson("/routes", { "filter[id]": routeId });
-  }
-
-  async function fetchStopData(stopId: string): Promise<StopResponse> {
-    return getJson("/stops", { "filter[id]": stopId });
   }
 
   async function fetchBusRouteData(
@@ -93,5 +88,5 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { route, description, encodedPolylines };
   }
 
-  return { fetchRouteData, fetchStopData, fetchBusRouteData };
+  return { fetchRouteData, fetchBusRouteData };
 }

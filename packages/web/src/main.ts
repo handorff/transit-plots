@@ -1,4 +1,4 @@
-import type { RouteParams, StationParams, BusRouteParams, OpenTypeFont } from "@transit-plots/core";
+import type { RouteParams, BusRouteParams, OpenTypeFont } from "@transit-plots/core";
 import {
   RENDER_TYPES,
   coerceParams,
@@ -61,14 +61,6 @@ function renderParamFields(type: string) {
     <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
   `;
 
-  if (resolved === "station-card") {
-    els.paramFields.innerHTML = `
-      <label>Stop ID <input id="stopId" value="place-sstat" /></label><br/><br/>
-      ${commonFields}
-    `;
-    return;
-  }
-
   if (resolved === "route-title" || resolved === "dot-grid") {
     els.paramFields.innerHTML = `
       <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
@@ -119,7 +111,6 @@ async function doRender() {
   const params = coerceParams(renderType, {
     routeId: readString("routeId"),
     directionId: readNumber("directionId"),
-    stopId: readString("stopId"),
     seed: readString("seed"),
     width: readNumber("width"),
     height: readNumber("height"),
@@ -129,9 +120,7 @@ async function doRender() {
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
   let mbtaData: unknown = null;
-  if (renderType === "station-card") {
-    mbtaData = await client.fetchStopData((params as StationParams).stopId);
-  } else if (renderType === "route-title" || renderType === "dot-grid") {
+  if (renderType === "route-title" || renderType === "dot-grid") {
     mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
   } else if (renderType === "bus-route") {
     mbtaData = await client.fetchBusRouteData(
