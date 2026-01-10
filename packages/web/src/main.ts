@@ -66,9 +66,6 @@ function renderParamFields(type: string) {
       </select>
     </label><br/><br/>
     <label>Seed <input id="seed" value="demo" /></label><br/><br/>
-    <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
-    <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
-    <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
   `;
 
   if (resolved === "bus-route") {
@@ -115,10 +112,7 @@ async function doRender() {
     routeId: readString("routeId"),
     directionId: readNumber("directionId"),
     seed: readString("seed"),
-    width: readNumber("width"),
-    height: readNumber("height"),
     format: readString("format"),
-    strokeWidth: readNumber("strokeWidth"),
   });
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });

@@ -1,11 +1,10 @@
 import paper from "paper";
 import type {
-  BaseParams,
   BusRouteParams,
   RenderParamsByType,
   RenderType,
 } from "./params.js";
-import { coerceRenderType } from "./params.js";
+import { coerceRenderType, resolveFormatSize } from "./params.js";
 
 import { drawBusRoute } from "./drawBusRoute.js";
 import type { OpenTypeFont } from "./fonts.js";
@@ -36,16 +35,16 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   paper.setup(canvas);
 
   // Use an explicit view size so exportSVG has the right dimensions
-  paper.view.viewSize = new paper.Size(params.width, params.height);
+  const { width, height } = resolveFormatSize(params.format);
+  paper.view.viewSize = new paper.Size(width, height);
 
   const resolvedType = coerceRenderType(type);
   switch (resolvedType) {
     case "bus-route":
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
-    case "frame":
     default:
-      drawFrame({ params: params as BaseParams });
+      drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
   }
 
@@ -53,15 +52,4 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   const svgNode = paper.project.exportSVG({ asString: true });
   paper.project.clear();
   return String(svgNode);
-}
-
-function drawFrame({ params }: { params: BaseParams }) {
-  const rect = new paper.Path.Rectangle({
-    point: [20, 20],
-    size: [params.width - 40, params.height - 40],
-    strokeColor: new paper.Color("black"),
-    strokeWidth: params.strokeWidth,
-  });
-
-  rect.rotate(0);
 }
