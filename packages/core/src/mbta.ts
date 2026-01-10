@@ -24,6 +24,12 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return res.json();
   }
 
+  async function getJsonUrl(url: string) {
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`MBTA API ${res.status} ${res.statusText}: ${url}`);
+    return res.json();
+  }
+
   // Example: fetch a route + its shapes/stops via includes (you can customize later)
   async function fetchRouteData(routeId: string): Promise<RouteResponse> {
     // Start simple. You’ll almost certainly tailor includes/fields once you port a notebook.
@@ -95,12 +101,30 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   }
 
   async function fetchRouteIds(): Promise<string[]> {
-    const json: RoutesResponse = await getJson("/routes");
-    const data = Array.isArray(json?.data) ? json.data : [];
-    const ids = data
-      .map((route: any) => String(route?.id ?? ""))
-      .filter((id: string) => id.length > 0);
-    return ids.sort((a: string, b: string) => a.localeCompare(b, undefined, { numeric: true }));
+    const ids: string[] = [];
+    let nextUrl = new URL(baseUrl + "/routes");
+    nextUrl.searchParams.set("page[limit]", "100");
+
+    while (nextUrl) {
+      const json: RoutesResponse = await getJsonUrl(nextUrl.toString());
+      const data = Array.isArray(json?.data) ? json.data : [];
+      ids.push(
+        ...data
+          .map((route: any) => String(route?.id ?? ""))
+          .filter((id: string) => id.length > 0)
+      );
+
+      const nextLink = json?.links?.next;
+      if (typeof nextLink === "string" && nextLink.length > 0) {
+        nextUrl = new URL(nextLink, baseUrl);
+      } else {
+        break;
+      }
+    }
+
+    return Array.from(new Set(ids)).sort((a: string, b: string) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
   }
 
   return { fetchRouteData, fetchStopData, fetchBusRouteData, fetchRouteIds };
