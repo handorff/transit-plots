@@ -1,0 +1,18 @@
+{
+  "name": "@transit-plots/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "npm -w @transit-plots/core run build",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@transit-plots/core": "0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.0.0"
+  }
+}

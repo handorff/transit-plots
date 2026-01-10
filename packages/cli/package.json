@@ -1,0 +1,19 @@
+{
+  "name": "@transit-plots/cli",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "svg": "node --enable-source-maps dist/index.js",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@transit-plots/core": "0.0.1",
+    "paper-jsdom": "^0.12.18",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.5",
+    "@types/yargs": "^17.0.35",
+    "typescript": "^5.5.0"
+  }
+}
