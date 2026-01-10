@@ -21,7 +21,7 @@ const argv = await yargs(hideBin(process.argv))
   .option("width", { type: "number", default: 1100 })
   .option("height", { type: "number", default: 850 })
   .option("strokeWidth", { type: "number", default: 1 })
-  .option("type", { choices: [...RENDER_TYPES], default: "frame" })
+  .option("type", { choices: [...RENDER_TYPES], default: "bus-route" })
   .option("stopId", { type: "string", default: "place-sstat" })
   .option("out", { type: "string", default: "out.svg" })
   .parse();

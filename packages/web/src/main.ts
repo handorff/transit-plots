@@ -1,4 +1,4 @@
-import type { RouteParams, StationParams } from "@transit-plots/core";
+import type { RouteParams, StationParams, BusRouteParams, OpenTypeFont } from "@transit-plots/core";
 import {
   RENDER_TYPES,
   coerceParams,
@@ -6,6 +6,11 @@ import {
   createMbtaClient,
   renderSvg
 } from "@transit-plots/core";
+
+import { loadInterBold, loadInterRegular } from "./loadFont";
+
+let interBold: OpenTypeFont;
+let interRegular: OpenTypeFont;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
@@ -44,6 +49,7 @@ let lastSvg = "";
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
   const commonFields = `
+    <label>Format <input id="format" value="notebook" /></label><br/><br/>  
     <label>Seed <input id="seed" value="demo" /></label><br/><br/>
     <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
     <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
@@ -66,6 +72,15 @@ function renderParamFields(type: string) {
     return;
   }
 
+  if (resolved === "bus-route") {
+    els.paramFields.innerHTML = `
+      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
+      <label>Direction ID <input id="directionId" value="1" /></label><br/><br/>
+      ${commonFields}
+    `;
+    return;
+  }
+
   els.paramFields.innerHTML = commonFields;
 }
 
@@ -79,15 +94,26 @@ function readString(id: string) {
   return input ? input.value : undefined;
 }
 
+async function ensureFonts() {
+  if (!interBold) interBold = await loadInterBold();
+  if (!interRegular) interRegular = await loadInterRegular();
+  return { interBold, interRegular };
+}
+
 async function doRender() {
+  const fonts = await ensureFonts();
+  const resources = { fonts };
+
   els.status.textContent = "Fetching…";
   const renderType = coerceRenderType(els.renderType.value);
   const params = coerceParams(renderType, {
     routeId: readString("routeId"),
+    directionId: readNumber("directionId"),
     stopId: readString("stopId"),
     seed: readString("seed"),
     width: readNumber("width"),
     height: readNumber("height"),
+    format: readString("format"),
     strokeWidth: readNumber("strokeWidth")
   });
 
@@ -97,12 +123,15 @@ async function doRender() {
     mbtaData = await client.fetchStopData((params as StationParams).stopId);
   } else if (renderType === "route-title" || renderType === "dot-grid") {
     mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
+  } else if (renderType === "bus-route") {
+    mbtaData = await client.fetchBusRouteData((params as BusRouteParams).routeId, (params as BusRouteParams).directionId);
   }
 
   els.status.textContent = "Rendering…";
   lastSvg = renderSvg({
     params,
     mbtaData,
+    resources,
     type: renderType
   });
 

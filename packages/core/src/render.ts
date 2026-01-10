@@ -1,6 +1,7 @@
 import paper from "paper";
 import type {
   BaseParams,
+  BusRouteParams,
   RenderParamsByType,
   RenderType,
   RouteParams,
@@ -8,15 +9,26 @@ import type {
 } from "./params.js";
 import { coerceRenderType } from "./params.js";
 
+import { drawBusRoute } from "./drawBusRoute.js";
+import type { OpenTypeFont } from "./fonts.js";
+
+export type RenderResources = {
+  fonts?: {
+    interBold?: OpenTypeFont;
+    interRegular?: OpenTypeFont;
+  };
+};
+
 export type RenderInput = {
   params: RenderParamsByType[RenderType];
   mbtaData: any;
+  resources: RenderResources;
   type: RenderType;
 };
 
 // Browser-friendly rendering: caller provides a canvas OR we create one.
 // For CLI (Node), we’ll use paper-jsdom in the CLI package and still call this.
-export function renderSvg({ params, mbtaData, type }: RenderInput): string {
+export function renderSvg({ params, mbtaData, resources, type }: RenderInput): string {
   // Create an offscreen canvas in browser; in Node, paper-jsdom sets this up.
   const canvas =
     typeof document !== "undefined"
@@ -38,6 +50,9 @@ export function renderSvg({ params, mbtaData, type }: RenderInput): string {
       break;
     case "station-card":
       drawStationCard({ params: params as StationParams, mbtaData });
+      break;
+    case "bus-route":
+      drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
     case "frame":
     default:

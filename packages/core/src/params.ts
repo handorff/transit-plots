@@ -1,9 +1,10 @@
-export const RENDER_TYPES = ["frame", "route-title", "dot-grid", "station-card"] as const;
+export const RENDER_TYPES = ["bus-route", "frame", "route-title", "dot-grid", "station-card"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
   width: number;
   height: number;
+  format: string;
   strokeWidth: number;
   seed: string; // for deterministic randomness
 };
@@ -16,11 +17,17 @@ export type StationParams = BaseParams & {
   stopId: string; // e.g. "place-sstat"
 };
 
+export type BusRouteParams = BaseParams & {
+  routeId: string;
+  directionId: 0 | 1;
+}
+
 export type RenderParamsByType = {
   frame: BaseParams;
   "route-title": RouteParams;
   "dot-grid": RouteParams;
   "station-card": StationParams;
+  "bus-route": BusRouteParams;
 };
 
 export type RenderParams = RenderParamsByType[RenderType];
@@ -28,6 +35,7 @@ export type RenderParams = RenderParamsByType[RenderType];
 export const DEFAULT_BASE_PARAMS: BaseParams = {
   width: 1100,
   height: 850,
+  format: "notebook",
   strokeWidth: 1,
   seed: "demo"
 };
@@ -40,6 +48,12 @@ export const DEFAULT_ROUTE_PARAMS: RouteParams = {
 export const DEFAULT_STATION_PARAMS: StationParams = {
   ...DEFAULT_BASE_PARAMS,
   stopId: "place-sstat"
+};
+
+export const DEFAULT_BUS_ROUTE_PARAMS: BusRouteParams = {
+  ...DEFAULT_BASE_PARAMS,
+  routeId: "1",
+  directionId: 0
 };
 
 // very small validation/coercion helper
@@ -55,6 +69,7 @@ export function coerceParams(
       };
     case "route-title":
     case "dot-grid":
+    case "bus-route":
       return {
         ...coerceBaseParams(partial),
         routeId: String(partial.routeId ?? DEFAULT_ROUTE_PARAMS.routeId)
