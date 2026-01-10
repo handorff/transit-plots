@@ -1,0 +1,9 @@
+node_modules
+dist
+packages/web/dist
+packages/web/.vite
+coverage
+out
+*.tgz
+*.log
+.DS_Store

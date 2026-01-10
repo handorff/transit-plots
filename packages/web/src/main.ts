@@ -4,7 +4,7 @@ import {
   coerceParams,
   coerceRenderType,
   createMbtaClient,
-  renderSvg
+  renderSvg,
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont";
@@ -41,7 +41,7 @@ const els = {
   status: document.querySelector<HTMLParagraphElement>("#status")!,
   preview: document.querySelector<HTMLDivElement>("#preview")!,
   render: document.querySelector<HTMLButtonElement>("#render")!,
-  download: document.querySelector<HTMLButtonElement>("#download")!
+  download: document.querySelector<HTMLButtonElement>("#download")!,
 };
 
 let lastSvg = "";
@@ -114,7 +114,7 @@ async function doRender() {
     width: readNumber("width"),
     height: readNumber("height"),
     format: readString("format"),
-    strokeWidth: readNumber("strokeWidth")
+    strokeWidth: readNumber("strokeWidth"),
   });
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
@@ -124,7 +124,10 @@ async function doRender() {
   } else if (renderType === "route-title" || renderType === "dot-grid") {
     mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
   } else if (renderType === "bus-route") {
-    mbtaData = await client.fetchBusRouteData((params as BusRouteParams).routeId, (params as BusRouteParams).directionId);
+    mbtaData = await client.fetchBusRouteData(
+      (params as BusRouteParams).routeId,
+      (params as BusRouteParams).directionId
+    );
   }
 
   els.status.textContent = "Rendering…";
@@ -132,7 +135,7 @@ async function doRender() {
     params,
     mbtaData,
     resources,
-    type: renderType
+    type: renderType,
   });
 
   els.preview.innerHTML = lastSvg;

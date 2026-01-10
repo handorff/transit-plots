@@ -1,11 +1,17 @@
 {
   "name": "transit-plots",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm -w @transit-plots/web run dev",
     "build": "npm -w @transit-plots/web run build",
-    "svg": "npm -w @transit-plots/cli run svg"
+    "svg": "npm -w @transit-plots/cli run svg",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4"
   }
 }
-

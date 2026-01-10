@@ -11,7 +11,7 @@ import {
   coerceParams,
   coerceRenderType,
   createMbtaClient,
-  renderSvg
+  renderSvg,
 } from "@transit-plots/core";
 import type { RouteParams, StationParams } from "@transit-plots/core";
 
@@ -33,7 +33,7 @@ const params = coerceParams(renderType, {
   seed: argv.seed,
   width: argv.width,
   height: argv.height,
-  strokeWidth: argv.strokeWidth
+  strokeWidth: argv.strokeWidth,
 });
 
 const apiKey = process.env.MBTA_API_KEY;

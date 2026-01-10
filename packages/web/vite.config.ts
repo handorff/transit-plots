@@ -8,18 +8,16 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       // Point @transit-plots/core to the TS source for HMR
-      "@transit-plots/core": fileURLToPath(
-        new URL("../core/src/index.ts", import.meta.url)
-      )
-    }
+      "@transit-plots/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url)),
+    },
   },
 
   server: {
     fs: {
       // Allow importing files from sibling workspace packages
-      allow: [".."]
-    }
+      allow: [".."],
+    },
     // If you find changes aren't detected on macOS, uncomment:
     // watch: { usePolling: true }
-  }
+  },
 }));

@@ -5,7 +5,7 @@ import type {
   RenderParamsByType,
   RenderType,
   RouteParams,
-  StationParams
+  StationParams,
 } from "./params.js";
 import { coerceRenderType } from "./params.js";
 
@@ -71,7 +71,7 @@ function drawFrame({ params }: { params: BaseParams }) {
     point: [20, 20],
     size: [params.width - 40, params.height - 40],
     strokeColor: new paper.Color("black"),
-    strokeWidth: params.strokeWidth
+    strokeWidth: params.strokeWidth,
   });
 
   rect.rotate(0);
@@ -92,7 +92,7 @@ function drawRouteTitle({ params, mbtaData }: { params: RouteParams; mbtaData: a
     fillColor: textColor,
     fontFamily: "system-ui, sans-serif",
     fontWeight: "bold",
-    fontSize: 64
+    fontSize: 64,
   });
 
   const subtitleText = new paper.PointText({
@@ -100,13 +100,13 @@ function drawRouteTitle({ params, mbtaData }: { params: RouteParams; mbtaData: a
     content: `Route ${params.routeId} • ${typeLabel}`,
     fillColor: textColor,
     fontFamily: "system-ui, sans-serif",
-    fontSize: 26
+    fontSize: 26,
   });
 
   const bar = new paper.Path.Rectangle({
     point: [60, 260],
     size: [Math.max(260, titleText.bounds.width * 0.6), 10],
-    fillColor: accent
+    fillColor: accent,
   });
 
   bar.rotate(0);
@@ -116,13 +116,11 @@ function drawRouteTitle({ params, mbtaData }: { params: RouteParams; mbtaData: a
 
 function drawDotGrid({ params, mbtaData }: { params: RouteParams; mbtaData: any }) {
   const route = mbtaData?.data?.[0];
-  const routeColor = route?.attributes?.color
-    ? `#${route.attributes.color}`
-    : "#0f766e";
+  const routeColor = route?.attributes?.color ? `#${route.attributes.color}` : "#0f766e";
   const background = new paper.Path.Rectangle({
     point: [0, 0],
     size: [params.width, params.height],
-    fillColor: new paper.Color("#f8fafc")
+    fillColor: new paper.Color("#f8fafc"),
   });
 
   background.rotate(0);
@@ -148,7 +146,7 @@ function drawDotGrid({ params, mbtaData }: { params: RouteParams; mbtaData: any 
       const circle = new paper.Path.Circle({
         center,
         radius,
-        fillColor: dotColor
+        fillColor: dotColor,
       });
 
       circle.opacity = 0.3 + rng() * 0.6;
@@ -160,7 +158,7 @@ function drawDotGrid({ params, mbtaData }: { params: RouteParams; mbtaData: any 
     content: `Route ${params.routeId}`,
     fillColor: new paper.Color("#0f172a"),
     fontFamily: "system-ui, sans-serif",
-    fontSize: 24
+    fontSize: 24,
   });
 
   label.rotate(0);
@@ -179,7 +177,7 @@ function drawStationCard({ params, mbtaData }: { params: StationParams; mbtaData
     size: [params.width - 40, params.height - 40],
     fillColor: new paper.Color("#fff7ed"),
     strokeColor: new paper.Color("#f97316"),
-    strokeWidth: params.strokeWidth
+    strokeWidth: params.strokeWidth,
   });
 
   background.rotate(0);
@@ -190,7 +188,7 @@ function drawStationCard({ params, mbtaData }: { params: StationParams; mbtaData
     fillColor: textColor,
     fontFamily: "system-ui, sans-serif",
     fontWeight: "bold",
-    fontSize: 56
+    fontSize: 56,
   });
 
   const subtitle = new paper.PointText({
@@ -198,14 +196,14 @@ function drawStationCard({ params, mbtaData }: { params: StationParams; mbtaData
     content: description,
     fillColor: textColor,
     fontFamily: "system-ui, sans-serif",
-    fontSize: 26
+    fontSize: 26,
   });
 
   const badge = new paper.Path.Rectangle({
     point: [70, 260],
     size: [220, 44],
     radius: 12,
-    fillColor: accent
+    fillColor: accent,
   });
 
   const badgeText = new paper.PointText({
@@ -213,7 +211,7 @@ function drawStationCard({ params, mbtaData }: { params: StationParams; mbtaData
     content: `Stop ${params.stopId}`,
     fillColor: new paper.Color("white"),
     fontFamily: "system-ui, sans-serif",
-    fontSize: 20
+    fontSize: 20,
   });
 
   badgeText.rotate(0);
