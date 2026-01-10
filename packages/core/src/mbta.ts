@@ -81,5 +81,28 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { route, description, encodedPolylines };
   }
 
-  return { fetchBusRouteData };
+  async function fetchRouteIds(): Promise<{ id: string; shortName: string }[]> {
+    const json = await getJson("/routes", { "page[limit]": "1000", sort: "sort_order" });
+    const data = Array.isArray(json?.data) ? json.data : [];
+    const routes: { id: string; shortName: string; sortOrder: number }[] = data
+      .filter((route: any) => route?.attributes?.type === 3)
+      .map((route: any) => {
+        const id = String(route?.id ?? "");
+        const shortName = String(route?.attributes?.short_name ?? id);
+        return {
+          id,
+          shortName: shortName || id,
+          sortOrder:
+            typeof route?.attributes?.sort_order === "number"
+              ? route.attributes.sort_order
+              : Number.POSITIVE_INFINITY,
+        };
+      })
+      .filter((route: { id: string }) => route.id.length > 0);
+
+    routes.sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+    return routes.map(({ id, shortName }) => ({ id, shortName }));
+  }
+
+  return { fetchBusRouteData, fetchRouteIds };
 }
