@@ -24,7 +24,6 @@ app.innerHTML = `
       </label><br/><br/>
       <div id="paramFields"></div>
       <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label><br/><br/>
-      <button id="render">Render</button>
       <button id="download">Download SVG</button>
       <p id="status"></p>
     </div>
@@ -40,7 +39,6 @@ const els = {
   apiKey: document.querySelector<HTMLInputElement>("#apiKey")!,
   status: document.querySelector<HTMLParagraphElement>("#status")!,
   preview: document.querySelector<HTMLDivElement>("#preview")!,
-  render: document.querySelector<HTMLButtonElement>("#render")!,
   download: document.querySelector<HTMLButtonElement>("#download")!,
 };
 
@@ -180,7 +178,6 @@ function downloadSvg() {
   URL.revokeObjectURL(url);
 }
 
-els.render.addEventListener("click", () => scheduleRender());
 els.download.addEventListener("click", () => downloadSvg());
 els.renderType.addEventListener("change", () => {
   renderParamFields(els.renderType.value);
