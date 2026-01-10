@@ -3,7 +3,6 @@ export type MbtaClientOptions = {
   baseUrl?: string; // default v3
 };
 
-export type RouteResponse = any; // keep loose initially, tighten later
 export type BusRouteResponse = any;
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
@@ -20,12 +19,6 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     const res = await fetch(url.toString(), { headers });
     if (!res.ok) throw new Error(`MBTA API ${res.status} ${res.statusText}: ${url}`);
     return res.json();
-  }
-
-  // Example: fetch a route + its shapes/stops via includes (you can customize later)
-  async function fetchRouteData(routeId: string): Promise<RouteResponse> {
-    // Start simple. You’ll almost certainly tailor includes/fields once you port a notebook.
-    return getJson("/routes", { "filter[id]": routeId });
   }
 
   async function fetchBusRouteData(
@@ -88,5 +81,5 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { route, description, encodedPolylines };
   }
 
-  return { fetchRouteData, fetchBusRouteData };
+  return { fetchBusRouteData };
 }

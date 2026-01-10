@@ -4,7 +4,6 @@ import type {
   BusRouteParams,
   RenderParamsByType,
   RenderType,
-  RouteParams,
 } from "./params.js";
 import { coerceRenderType } from "./params.js";
 
@@ -41,9 +40,6 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
 
   const resolvedType = coerceRenderType(type);
   switch (resolvedType) {
-    case "route-title":
-      drawRouteTitle({ params: params as RouteParams, mbtaData });
-      break;
     case "bus-route":
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
@@ -68,41 +64,4 @@ function drawFrame({ params }: { params: BaseParams }) {
   });
 
   rect.rotate(0);
-}
-
-function drawRouteTitle({ params, mbtaData }: { params: RouteParams; mbtaData: any }) {
-  const route = mbtaData?.data?.[0];
-  const title = route?.attributes?.long_name || route?.attributes?.short_name || params.routeId;
-  const typeLabel = route?.attributes?.type ?? "Transit Route";
-  const textColor = new paper.Color("#111827");
-  const accent = new paper.Color("#3b82f6");
-
-  drawFrame({ params });
-
-  const titleText = new paper.PointText({
-    point: [60, 160],
-    content: title,
-    fillColor: textColor,
-    fontFamily: "system-ui, sans-serif",
-    fontWeight: "bold",
-    fontSize: 64,
-  });
-
-  const subtitleText = new paper.PointText({
-    point: [60, 220],
-    content: `Route ${params.routeId} • ${typeLabel}`,
-    fillColor: textColor,
-    fontFamily: "system-ui, sans-serif",
-    fontSize: 26,
-  });
-
-  const bar = new paper.Path.Rectangle({
-    point: [60, 260],
-    size: [Math.max(260, titleText.bounds.width * 0.6), 10],
-    fillColor: accent,
-  });
-
-  bar.rotate(0);
-  subtitleText.rotate(0);
-  titleText.rotate(0);
 }

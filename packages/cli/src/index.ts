@@ -15,7 +15,7 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
-import type { RouteParams, BusRouteParams } from "@transit-plots/core";
+import type { BusRouteParams } from "@transit-plots/core";
 
 const argv = await yargs(hideBin(process.argv))
   .option("routeId", { type: "string", default: "1" })
@@ -42,9 +42,7 @@ const apiKey = process.env.MBTA_API_KEY;
 const client = createMbtaClient({ apiKey });
 
 let mbtaData: unknown = null;
-if (renderType === "route-title") {
-  mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
-} else if (renderType === "bus-route") {
+if (renderType === "bus-route") {
   mbtaData = await client.fetchBusRouteData(
     (params as BusRouteParams).routeId,
     (params as BusRouteParams).directionId

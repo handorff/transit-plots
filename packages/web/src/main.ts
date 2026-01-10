@@ -1,4 +1,4 @@
-import type { RouteParams, BusRouteParams, OpenTypeFont } from "@transit-plots/core";
+import type { BusRouteParams, OpenTypeFont } from "@transit-plots/core";
 import {
   RENDER_TYPES,
   coerceParams,
@@ -61,14 +61,6 @@ function renderParamFields(type: string) {
     <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
   `;
 
-  if (resolved === "route-title") {
-    els.paramFields.innerHTML = `
-      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
-      ${commonFields}
-    `;
-    return;
-  }
-
   if (resolved === "bus-route") {
     els.paramFields.innerHTML = `
       <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
@@ -120,9 +112,7 @@ async function doRender() {
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
   let mbtaData: unknown = null;
-  if (renderType === "route-title") {
-    mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
-  } else if (renderType === "bus-route") {
+  if (renderType === "bus-route") {
     mbtaData = await client.fetchBusRouteData(
       (params as BusRouteParams).routeId,
       (params as BusRouteParams).directionId
