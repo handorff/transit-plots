@@ -49,7 +49,12 @@ let lastSvg = "";
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
   const commonFields = `
-    <label>Format <input id="format" value="notebook" /></label><br/><br/>  
+    <label>Format
+      <select id="format">
+        <option value="notebook" selected>notebook</option>
+        <option value="print">print</option>
+      </select>
+    </label><br/><br/>
     <label>Seed <input id="seed" value="demo" /></label><br/><br/>
     <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
     <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
@@ -90,7 +95,7 @@ function readNumber(id: string) {
 }
 
 function readString(id: string) {
-  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
   return input ? input.value : undefined;
 }
 
