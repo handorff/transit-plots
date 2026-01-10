@@ -54,8 +54,6 @@ export function drawBusRoute({
   resources: RenderResources;
 }) {
   const FORMAT = params.format === "notebook" ? NOTEBOOK_MUJI_B5_LINED : PRINT_11_BY_14;
-  console.log(params);
-  console.log(mbtaData);
 
   // Format-dependent constants
   const HEIGHT = FORMAT.height;

@@ -25,7 +25,7 @@ export type StationParams = BaseParams & {
 
 export type BusRouteParams = BaseParams & {
   routeId: string;
-  directionId: 0 | 1;
+  directionId: number;
 };
 
 export type RenderParamsByType = {
@@ -65,7 +65,7 @@ export const DEFAULT_BUS_ROUTE_PARAMS: BusRouteParams = {
 // very small validation/coercion helper
 export function coerceParams(
   type: RenderType,
-  partial: Partial<RouteParams & StationParams & BaseParams>
+  partial: Partial<RouteParams & StationParams & BusRouteParams & BaseParams>
 ): RenderParamsByType[RenderType] {
   switch (type) {
     case "station-card":
@@ -75,10 +75,15 @@ export function coerceParams(
       };
     case "route-title":
     case "dot-grid":
+      return {
+        ...coerceBaseParams(partial),
+        routeId: String(partial.routeId ?? DEFAULT_ROUTE_PARAMS.routeId),
+      };
     case "bus-route":
       return {
         ...coerceBaseParams(partial),
         routeId: String(partial.routeId ?? DEFAULT_ROUTE_PARAMS.routeId),
+        directionId: partial.directionId ?? DEFAULT_BUS_ROUTE_PARAMS.directionId,
       };
     case "frame":
     default:

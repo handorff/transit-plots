@@ -13,10 +13,13 @@ import {
   createMbtaClient,
   renderSvg,
 } from "@transit-plots/core";
-import type { RouteParams, StationParams } from "@transit-plots/core";
+
+import { loadInterBold, loadInterRegular } from "./loadFont.js";
+import type { RouteParams, StationParams, BusRouteParams } from "@transit-plots/core";
 
 const argv = await yargs(hideBin(process.argv))
   .option("routeId", { type: "string", default: "1" })
+  .option("directionId", { type: "number", default: 0 })
   .option("seed", { type: "string", default: "demo" })
   .option("width", { type: "number", default: 1100 })
   .option("height", { type: "number", default: 850 })
@@ -29,6 +32,7 @@ const argv = await yargs(hideBin(process.argv))
 const renderType = coerceRenderType(argv.type as string);
 const params = coerceParams(renderType, {
   routeId: argv.routeId,
+  directionId: argv.directionId,
   stopId: argv.stopId,
   seed: argv.seed,
   width: argv.width,
@@ -44,8 +48,18 @@ if (renderType === "station-card") {
   mbtaData = await client.fetchStopData((params as StationParams).stopId);
 } else if (renderType === "route-title" || renderType === "dot-grid") {
   mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
+} else if (renderType === "bus-route") {
+  mbtaData = await client.fetchBusRouteData(
+    (params as BusRouteParams).routeId,
+    (params as BusRouteParams).directionId
+  );
 }
-const svg = renderSvg({ params, mbtaData, type: renderType });
+
+const fonts = {
+  interRegular: loadInterRegular(),
+  interBold: loadInterBold(),
+};
+const svg = renderSvg({ params, mbtaData, type: renderType, resources: { fonts } });
 
 fs.mkdirSync(path.dirname(argv.out), { recursive: true });
 fs.writeFileSync(argv.out, svg, "utf8");

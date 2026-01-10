@@ -33,7 +33,10 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return getJson("/stops", { "filter[id]": stopId });
   }
 
-  async function fetchBusRouteData(routeId: string, directionId: 0 | 1): Promise<BusRouteResponse> {
+  async function fetchBusRouteData(
+    routeId: string,
+    directionId: number
+  ): Promise<BusRouteResponse> {
     const json = await getJson("/routes", {
       "filter[id]": routeId,
       include: "route_patterns.representative_trip.shape",
