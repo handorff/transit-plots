@@ -33,3 +33,4 @@ Thumbs.db
 # Optional: local caches
 .cache/
 
+out.svg
