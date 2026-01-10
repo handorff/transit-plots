@@ -80,7 +80,12 @@ function renderParamFields(type: string) {
   if (resolved === "bus-route") {
     els.paramFields.innerHTML = `
       <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
-      <label>Direction ID <input id="directionId" value="1" /></label><br/><br/>
+      <label>Direction ID
+        <select id="directionId">
+          <option value="0">0</option>
+          <option value="1" selected>1</option>
+        </select>
+      </label><br/><br/>
       ${commonFields}
     `;
     return;
@@ -90,7 +95,7 @@ function renderParamFields(type: string) {
 }
 
 function readNumber(id: string) {
-  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
   return input ? Number(input.value) : undefined;
 }
 
