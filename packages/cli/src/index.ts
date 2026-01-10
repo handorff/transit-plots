@@ -15,7 +15,7 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
-import type { RouteParams, StationParams, BusRouteParams } from "@transit-plots/core";
+import type { BusRouteParams } from "@transit-plots/core";
 
 const argv = await yargs(hideBin(process.argv))
   .option("routeId", { type: "string", default: "1" })
@@ -25,7 +25,6 @@ const argv = await yargs(hideBin(process.argv))
   .option("height", { type: "number", default: 850 })
   .option("strokeWidth", { type: "number", default: 1 })
   .option("type", { choices: [...RENDER_TYPES], default: "bus-route" })
-  .option("stopId", { type: "string", default: "place-sstat" })
   .option("out", { type: "string", default: "out.svg" })
   .parse();
 
@@ -33,7 +32,6 @@ const renderType = coerceRenderType(argv.type as string);
 const params = coerceParams(renderType, {
   routeId: argv.routeId,
   directionId: argv.directionId,
-  stopId: argv.stopId,
   seed: argv.seed,
   width: argv.width,
   height: argv.height,
@@ -44,11 +42,7 @@ const apiKey = process.env.MBTA_API_KEY;
 const client = createMbtaClient({ apiKey });
 
 let mbtaData: unknown = null;
-if (renderType === "station-card") {
-  mbtaData = await client.fetchStopData((params as StationParams).stopId);
-} else if (renderType === "route-title" || renderType === "dot-grid") {
-  mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
-} else if (renderType === "bus-route") {
+if (renderType === "bus-route") {
   mbtaData = await client.fetchBusRouteData(
     (params as BusRouteParams).routeId,
     (params as BusRouteParams).directionId
