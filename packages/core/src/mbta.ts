@@ -6,6 +6,7 @@ export type MbtaClientOptions = {
 export type RouteResponse = any; // keep loose initially, tighten later
 export type StopResponse = any;
 export type BusRouteResponse = any;
+export type RoutesResponse = any;
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
   const baseUrl = opts.baseUrl ?? "https://api-v3.mbta.com";
@@ -93,5 +94,14 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { route, description, encodedPolylines };
   }
 
-  return { fetchRouteData, fetchStopData, fetchBusRouteData };
+  async function fetchRouteIds(): Promise<string[]> {
+    const json: RoutesResponse = await getJson("/routes");
+    const data = Array.isArray(json?.data) ? json.data : [];
+    const ids = data
+      .map((route: any) => String(route?.id ?? ""))
+      .filter((id: string) => id.length > 0);
+    return ids.sort((a: string, b: string) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+
+  return { fetchRouteData, fetchStopData, fetchBusRouteData, fetchRouteIds };
 }

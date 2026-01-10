@@ -45,6 +45,9 @@ const els = {
 let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
+let routeIds: string[] = [];
+let routeIdsLoading = false;
+let routeIdsError: string | null = null;
 
 function scheduleRender() {
   if (renderTimer) {
@@ -58,6 +61,7 @@ function scheduleRender() {
 
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
+  const currentRouteId = readString("routeId") ?? "1";
   const commonFields = `
     <label>Format
       <select id="format">
@@ -81,7 +85,11 @@ function renderParamFields(type: string) {
 
   if (resolved === "route-title" || resolved === "dot-grid") {
     els.paramFields.innerHTML = `
-      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
+      <label>Route ID
+        <select id="routeId">
+          ${buildRouteIdOptions(currentRouteId)}
+        </select>
+      </label><br/><br/>
       ${commonFields}
     `;
     return;
@@ -89,7 +97,11 @@ function renderParamFields(type: string) {
 
   if (resolved === "bus-route") {
     els.paramFields.innerHTML = `
-      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
+      <label>Route ID
+        <select id="routeId">
+          ${buildRouteIdOptions(currentRouteId)}
+        </select>
+      </label><br/><br/>
       <label>Direction ID
         <select id="directionId">
           <option value="0">0</option>
@@ -102,6 +114,35 @@ function renderParamFields(type: string) {
   }
 
   els.paramFields.innerHTML = commonFields;
+}
+
+function buildRouteIdOptions(selectedId: string) {
+  if (routeIds.length === 0) {
+    const status = routeIdsError
+      ? `Unable to load routes (${routeIdsError})`
+      : routeIdsLoading
+        ? "Loading route IDs…"
+        : "Route IDs unavailable";
+    return `
+      <option value="${selectedId}" selected>${selectedId}</option>
+      <option value="" disabled>${status}</option>
+    `;
+  }
+  return routeIds
+    .map((id) => `<option value="${id}"${id === selectedId ? " selected" : ""}>${id}</option>`)
+    .join("");
+}
+
+function refreshRouteIdOptions() {
+  const routeSelect = document.querySelector<HTMLSelectElement>("#routeId");
+  if (!routeSelect) return;
+  const currentRouteId = routeSelect.value || "1";
+  routeSelect.innerHTML = buildRouteIdOptions(currentRouteId);
+  if (routeIds.length > 0 && !routeIds.includes(currentRouteId)) {
+    routeSelect.value = routeIds[0];
+  } else {
+    routeSelect.value = currentRouteId;
+  }
 }
 
 function readNumber(id: string) {
@@ -167,6 +208,22 @@ async function doRender() {
   els.status.textContent = "Done.";
 }
 
+async function loadRouteIds() {
+  routeIdsLoading = true;
+  routeIdsError = null;
+  refreshRouteIdOptions();
+  try {
+    const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
+    routeIds = await client.fetchRouteIds();
+  } catch (error) {
+    routeIdsError = error instanceof Error ? error.message : "Unknown error";
+    routeIds = [];
+  } finally {
+    routeIdsLoading = false;
+    refreshRouteIdOptions();
+  }
+}
+
 function downloadSvg() {
   if (!lastSvg) return;
   const blob = new Blob([lastSvg], { type: "image/svg+xml;charset=utf-8" });
@@ -186,8 +243,12 @@ els.renderType.addEventListener("change", () => {
 els.paramFields.addEventListener("input", () => scheduleRender());
 els.paramFields.addEventListener("change", () => scheduleRender());
 els.apiKey.addEventListener("input", () => scheduleRender());
-els.apiKey.addEventListener("change", () => scheduleRender());
+els.apiKey.addEventListener("change", () => {
+  void loadRouteIds();
+  scheduleRender();
+});
 
 // Render once on load
 renderParamFields(els.renderType.value);
+void loadRouteIds();
 void doRender();
