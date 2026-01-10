@@ -49,7 +49,12 @@ let lastSvg = "";
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
   const commonFields = `
-    <label>Format <input id="format" value="notebook" /></label><br/><br/>  
+    <label>Format
+      <select id="format">
+        <option value="notebook" selected>notebook</option>
+        <option value="print">print</option>
+      </select>
+    </label><br/><br/>
     <label>Seed <input id="seed" value="demo" /></label><br/><br/>
     <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
     <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
@@ -75,7 +80,12 @@ function renderParamFields(type: string) {
   if (resolved === "bus-route") {
     els.paramFields.innerHTML = `
       <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
-      <label>Direction ID <input id="directionId" value="1" /></label><br/><br/>
+      <label>Direction ID
+        <select id="directionId">
+          <option value="0">0</option>
+          <option value="1" selected>1</option>
+        </select>
+      </label><br/><br/>
       ${commonFields}
     `;
     return;
@@ -85,12 +95,12 @@ function renderParamFields(type: string) {
 }
 
 function readNumber(id: string) {
-  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
   return input ? Number(input.value) : undefined;
 }
 
 function readString(id: string) {
-  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
   return input ? input.value : undefined;
 }
 
