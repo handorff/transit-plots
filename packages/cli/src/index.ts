@@ -21,9 +21,6 @@ const argv = await yargs(hideBin(process.argv))
   .option("routeId", { type: "string", default: "1" })
   .option("directionId", { type: "number", default: 0 })
   .option("seed", { type: "string", default: "demo" })
-  .option("width", { type: "number", default: 1100 })
-  .option("height", { type: "number", default: 850 })
-  .option("strokeWidth", { type: "number", default: 1 })
   .option("type", { choices: [...RENDER_TYPES], default: "bus-route" })
   .option("out", { type: "string", default: "out.svg" })
   .parse();
@@ -33,9 +30,6 @@ const params = coerceParams(renderType, {
   routeId: argv.routeId,
   directionId: argv.directionId,
   seed: argv.seed,
-  width: argv.width,
-  height: argv.height,
-  strokeWidth: argv.strokeWidth,
 });
 
 const apiKey = process.env.MBTA_API_KEY;
