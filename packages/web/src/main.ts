@@ -1,15 +1,23 @@
-import { coerceParams, createMbtaClient, renderSvg } from "@transit-plots/core";
+import type { RouteParams, StationParams } from "@transit-plots/core";
+import {
+  RENDER_TYPES,
+  coerceParams,
+  coerceRenderType,
+  createMbtaClient,
+  renderSvg
+} from "@transit-plots/core";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <div style="display:flex; gap:24px; align-items:flex-start; font-family: system-ui;">
     <div style="width: 320px;">
       <h2>Transit SVGs</h2>
-      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
-      <label>Seed <input id="seed" value="demo" /></label><br/><br/>
-      <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
-      <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
-      <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
+      <label>SVG Type
+        <select id="renderType">
+          ${RENDER_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("")}
+        </select>
+      </label><br/><br/>
+      <div id="paramFields"></div>
       <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label><br/><br/>
       <button id="render">Render</button>
       <button id="download">Download SVG</button>
@@ -22,11 +30,8 @@ app.innerHTML = `
 `;
 
 const els = {
-  routeId: document.querySelector<HTMLInputElement>("#routeId")!,
-  seed: document.querySelector<HTMLInputElement>("#seed")!,
-  width: document.querySelector<HTMLInputElement>("#width")!,
-  height: document.querySelector<HTMLInputElement>("#height")!,
-  strokeWidth: document.querySelector<HTMLInputElement>("#strokeWidth")!,
+  renderType: document.querySelector<HTMLSelectElement>("#renderType")!,
+  paramFields: document.querySelector<HTMLDivElement>("#paramFields")!,
   apiKey: document.querySelector<HTMLInputElement>("#apiKey")!,
   status: document.querySelector<HTMLParagraphElement>("#status")!,
   preview: document.querySelector<HTMLDivElement>("#preview")!,
@@ -36,21 +41,70 @@ const els = {
 
 let lastSvg = "";
 
+function renderParamFields(type: string) {
+  const resolved = coerceRenderType(type);
+  const commonFields = `
+    <label>Seed <input id="seed" value="demo" /></label><br/><br/>
+    <label>Width <input id="width" type="number" value="1100" /></label><br/><br/>
+    <label>Height <input id="height" type="number" value="850" /></label><br/><br/>
+    <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
+  `;
+
+  if (resolved === "station-card") {
+    els.paramFields.innerHTML = `
+      <label>Stop ID <input id="stopId" value="place-sstat" /></label><br/><br/>
+      ${commonFields}
+    `;
+    return;
+  }
+
+  if (resolved === "route-title" || resolved === "dot-grid") {
+    els.paramFields.innerHTML = `
+      <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
+      ${commonFields}
+    `;
+    return;
+  }
+
+  els.paramFields.innerHTML = commonFields;
+}
+
+function readNumber(id: string) {
+  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  return input ? Number(input.value) : undefined;
+}
+
+function readString(id: string) {
+  const input = document.querySelector<HTMLInputElement>(`#${id}`);
+  return input ? input.value : undefined;
+}
+
 async function doRender() {
   els.status.textContent = "Fetching…";
-  const params = coerceParams({
-    routeId: els.routeId.value,
-    seed: els.seed.value,
-    width: Number(els.width.value),
-    height: Number(els.height.value),
-    strokeWidth: Number(els.strokeWidth.value)
+  const renderType = coerceRenderType(els.renderType.value);
+  const params = coerceParams(renderType, {
+    routeId: readString("routeId"),
+    stopId: readString("stopId"),
+    seed: readString("seed"),
+    width: readNumber("width"),
+    height: readNumber("height"),
+    strokeWidth: readNumber("strokeWidth")
   });
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
-  const mbtaData = await client.fetchRouteData(params.routeId);
+  let mbtaData: unknown = null;
+  if (renderType === "station-card") {
+    mbtaData = await client.fetchStopData((params as StationParams).stopId);
+  } else if (renderType === "route-title" || renderType === "dot-grid") {
+    mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
+  }
 
   els.status.textContent = "Rendering…";
-  lastSvg = renderSvg({ params, mbtaData });
+  lastSvg = renderSvg({
+    params,
+    mbtaData,
+    type: renderType
+  });
 
   els.preview.innerHTML = lastSvg;
   els.status.textContent = "Done.";
@@ -62,13 +116,17 @@ function downloadSvg() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `transit-${els.routeId.value}.svg`;
+  a.download = `transit-${els.renderType.value}.svg`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
 els.render.addEventListener("click", () => void doRender());
 els.download.addEventListener("click", () => downloadSvg());
+els.renderType.addEventListener("change", () => {
+  renderParamFields(els.renderType.value);
+});
 
 // Render once on load
+renderParamFields(els.renderType.value);
 void doRender();

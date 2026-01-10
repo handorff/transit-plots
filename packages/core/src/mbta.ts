@@ -4,6 +4,7 @@ export type MbtaClientOptions = {
 };
 
 export type RouteResponse = any; // keep loose initially, tighten later
+export type StopResponse = any;
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
   const baseUrl = opts.baseUrl ?? "https://api-v3.mbta.com";
@@ -27,5 +28,9 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return getJson("/routes", { "filter[id]": routeId });
   }
 
-  return { fetchRouteData };
+  async function fetchStopData(stopId: string): Promise<StopResponse> {
+    return getJson("/stops", { "filter[id]": stopId });
+  }
+
+  return { fetchRouteData, fetchStopData };
 }
