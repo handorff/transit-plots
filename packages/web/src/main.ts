@@ -61,7 +61,7 @@ function renderParamFields(type: string) {
     <label>Stroke <input id="strokeWidth" type="number" step="0.1" value="1" /></label><br/><br/>
   `;
 
-  if (resolved === "route-title" || resolved === "dot-grid") {
+  if (resolved === "route-title") {
     els.paramFields.innerHTML = `
       <label>Route ID <input id="routeId" value="1" /></label><br/><br/>
       ${commonFields}
@@ -120,7 +120,7 @@ async function doRender() {
 
   const client = createMbtaClient({ apiKey: els.apiKey.value || undefined });
   let mbtaData: unknown = null;
-  if (renderType === "route-title" || renderType === "dot-grid") {
+  if (renderType === "route-title") {
     mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
   } else if (renderType === "bus-route") {
     mbtaData = await client.fetchBusRouteData(

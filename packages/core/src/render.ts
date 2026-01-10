@@ -44,9 +44,6 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
     case "route-title":
       drawRouteTitle({ params: params as RouteParams, mbtaData });
       break;
-    case "dot-grid":
-      drawDotGrid({ params: params as RouteParams, mbtaData });
-      break;
     case "bus-route":
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
@@ -108,71 +105,4 @@ function drawRouteTitle({ params, mbtaData }: { params: RouteParams; mbtaData: a
   bar.rotate(0);
   subtitleText.rotate(0);
   titleText.rotate(0);
-}
-
-function drawDotGrid({ params, mbtaData }: { params: RouteParams; mbtaData: any }) {
-  const route = mbtaData?.data?.[0];
-  const routeColor = route?.attributes?.color ? `#${route.attributes.color}` : "#0f766e";
-  const background = new paper.Path.Rectangle({
-    point: [0, 0],
-    size: [params.width, params.height],
-    fillColor: new paper.Color("#f8fafc"),
-  });
-
-  background.rotate(0);
-
-  const rng = seededRandom(params.seed);
-  const columns = 14;
-  const rows = 10;
-  const margin = 80;
-  const spacingX = (params.width - margin * 2) / (columns - 1);
-  const spacingY = (params.height - margin * 2) / (rows - 1);
-  const dotColor = new paper.Color(routeColor);
-
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < columns; col += 1) {
-      const jitterX = (rng() - 0.5) * spacingX * 0.25;
-      const jitterY = (rng() - 0.5) * spacingY * 0.25;
-      const radius = 6 + rng() * 10;
-      const center = new paper.Point(
-        margin + col * spacingX + jitterX,
-        margin + row * spacingY + jitterY
-      );
-
-      const circle = new paper.Path.Circle({
-        center,
-        radius,
-        fillColor: dotColor,
-      });
-
-      circle.opacity = 0.3 + rng() * 0.6;
-    }
-  }
-
-  const label = new paper.PointText({
-    point: [margin, params.height - margin / 2],
-    content: `Route ${params.routeId}`,
-    fillColor: new paper.Color("#0f172a"),
-    fontFamily: "system-ui, sans-serif",
-    fontSize: 24,
-  });
-
-  label.rotate(0);
-}
-
-function seededRandom(seed: string) {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i += 1) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-
-  return function random() {
-    h += h << 13;
-    h ^= h >>> 7;
-    h += h << 3;
-    h ^= h >>> 17;
-    h += h << 5;
-    return ((h >>> 0) % 1000) / 1000;
-  };
 }

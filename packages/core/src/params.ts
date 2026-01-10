@@ -2,7 +2,6 @@ export const RENDER_TYPES = [
   "bus-route",
   "frame",
   "route-title",
-  "dot-grid",
 ] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
@@ -26,7 +25,6 @@ export type BusRouteParams = BaseParams & {
 export type RenderParamsByType = {
   frame: BaseParams;
   "route-title": RouteParams;
-  "dot-grid": RouteParams;
   "bus-route": BusRouteParams;
 };
 
@@ -58,7 +56,6 @@ export function coerceParams(
 ): RenderParamsByType[RenderType] {
   switch (type) {
     case "route-title":
-    case "dot-grid":
       return {
         ...coerceBaseParams(partial),
         routeId: String(partial.routeId ?? DEFAULT_ROUTE_PARAMS.routeId),

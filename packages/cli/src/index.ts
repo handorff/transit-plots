@@ -42,7 +42,7 @@ const apiKey = process.env.MBTA_API_KEY;
 const client = createMbtaClient({ apiKey });
 
 let mbtaData: unknown = null;
-if (renderType === "route-title" || renderType === "dot-grid") {
+if (renderType === "route-title") {
   mbtaData = await client.fetchRouteData((params as RouteParams).routeId);
 } else if (renderType === "bus-route") {
   mbtaData = await client.fetchBusRouteData(
