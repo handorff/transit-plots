@@ -24,7 +24,6 @@ app.innerHTML = `
       </label><br/><br/>
       <div id="paramFields"></div>
       <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label><br/><br/>
-      <button id="render">Render</button>
       <button id="download">Download SVG</button>
       <p id="status"></p>
     </div>
@@ -40,11 +39,22 @@ const els = {
   apiKey: document.querySelector<HTMLInputElement>("#apiKey")!,
   status: document.querySelector<HTMLParagraphElement>("#status")!,
   preview: document.querySelector<HTMLDivElement>("#preview")!,
-  render: document.querySelector<HTMLButtonElement>("#render")!,
   download: document.querySelector<HTMLButtonElement>("#download")!,
 };
 
 let lastSvg = "";
+let renderToken = 0;
+let renderTimer: number | undefined;
+
+function scheduleRender() {
+  if (renderTimer) {
+    window.clearTimeout(renderTimer);
+  }
+  renderTimer = window.setTimeout(() => {
+    renderTimer = undefined;
+    void doRender();
+  }, 200);
+}
 
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
@@ -111,6 +121,7 @@ async function ensureFonts() {
 }
 
 async function doRender() {
+  const token = ++renderToken;
   const fonts = await ensureFonts();
   const resources = { fonts };
 
@@ -148,6 +159,10 @@ async function doRender() {
     type: renderType,
   });
 
+  if (token !== renderToken) {
+    return;
+  }
+
   els.preview.innerHTML = lastSvg;
   els.status.textContent = "Done.";
 }
@@ -163,11 +178,15 @@ function downloadSvg() {
   URL.revokeObjectURL(url);
 }
 
-els.render.addEventListener("click", () => void doRender());
 els.download.addEventListener("click", () => downloadSvg());
 els.renderType.addEventListener("change", () => {
   renderParamFields(els.renderType.value);
+  scheduleRender();
 });
+els.paramFields.addEventListener("input", () => scheduleRender());
+els.paramFields.addEventListener("change", () => scheduleRender());
+els.apiKey.addEventListener("input", () => scheduleRender());
+els.apiKey.addEventListener("change", () => scheduleRender());
 
 // Render once on load
 renderParamFields(els.renderType.value);
