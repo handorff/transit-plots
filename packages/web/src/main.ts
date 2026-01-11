@@ -21,10 +21,17 @@ app.innerHTML = `
         <select id="renderType">
           ${RENDER_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("")}
         </select>
-      </label><br/><br/>
+      </label>
+      <div style="font-size:12px; color:#555; margin-top:4px;">Choose the map style you want to generate.</div>
+      <br/><br/>
       <div id="paramFields"></div>
-      <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label><br/><br/>
-      <button id="download">Download SVG</button>
+      <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label>
+      <div style="font-size:12px; color:#555; margin-top:4px;">Required for live MBTA data and route lists.</div>
+      <br/><br/>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button id="download" disabled>Download SVG</button>
+        <span id="statusBadge" style="font-size:12px; padding:2px 6px; border-radius:999px; background:#eee; color:#333;">Idle</span>
+      </div>
       <p id="status"></p>
     </div>
     <div style="flex:1;">
@@ -40,11 +47,13 @@ const els = {
   status: document.querySelector<HTMLParagraphElement>("#status")!,
   preview: document.querySelector<HTMLDivElement>("#preview")!,
   download: document.querySelector<HTMLButtonElement>("#download")!,
+  statusBadge: document.querySelector<HTMLSpanElement>("#statusBadge")!,
 };
 
 let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
+let statusState: "idle" | "fetching" | "rendering" | "done" | "error" = "idle";
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
@@ -113,6 +122,9 @@ function renderParamFields(type: string) {
         <option value="print">print</option>
       </select>
     </label><br/><br/>
+    <div style="font-size:12px; color:#555; margin-top:-16px; margin-bottom:16px;">
+      Controls layout for notebook vs print-friendly sizing.
+    </div>
   `;
 
   if (resolved === "bus-route") {
@@ -122,18 +134,28 @@ function renderParamFields(type: string) {
     const selection = resolveRouteIdSelection(busRouteIdsState);
     const routeOptions = buildRouteIdOptions(busRouteIdsState, selection);
     busRouteIdsState.lastSelected = routeOptions.selected;
+    const warningText =
+      busRouteIdsState.status === "error"
+        ? "Unable to load bus route IDs. Check your MBTA API key and connection."
+        : "";
     els.paramFields.innerHTML = `
       <label>Route ID
         <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
           ${routeOptions.options}
         </select>
       </label><br/><br/>
+      <div style="font-size:12px; color:${warningText ? "#b33" : "#555"}; margin-top:-16px; margin-bottom:16px;">
+        ${warningText || "Selects which bus route is plotted. Required for bus routes."}
+      </div>
       <label>Direction ID
         <select id="directionId">
           <option value="0">0</option>
           <option value="1" selected>1</option>
         </select>
       </label><br/><br/>
+      <div style="font-size:12px; color:#555; margin-top:-16px; margin-bottom:16px;">
+        Chooses inbound/outbound direction. Required for bus routes.
+      </div>
       ${commonFields}
     `;
     return;
@@ -146,12 +168,19 @@ function renderParamFields(type: string) {
     const selection = resolveRouteIdSelection(subwayRouteIdsState);
     const routeOptions = buildRouteIdOptions(subwayRouteIdsState, selection);
     subwayRouteIdsState.lastSelected = routeOptions.selected;
+    const warningText =
+      subwayRouteIdsState.status === "error"
+        ? "Unable to load subway route IDs. Check your MBTA API key and connection."
+        : "";
     els.paramFields.innerHTML = `
       <label>Route ID
         <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
           ${routeOptions.options}
         </select>
       </label><br/><br/>
+      <div style="font-size:12px; color:${warningText ? "#b33" : "#555"}; margin-top:-16px; margin-bottom:16px;">
+        ${warningText || "Selects which subway line is plotted. Required for subway routes."}
+      </div>
       ${commonFields}
     `;
     return;
@@ -206,59 +235,93 @@ async function ensureFonts() {
   return { interBold, interRegular };
 }
 
+function updateDownloadState() {
+  els.download.disabled = !lastSvg || statusState !== "done";
+}
+
+function setStatus(message: string, state: typeof statusState) {
+  statusState = state;
+  els.status.textContent = message;
+  const badgeColors: Record<typeof statusState, { bg: string; color: string }> = {
+    idle: { bg: "#eee", color: "#333" },
+    fetching: { bg: "#e0f2fe", color: "#075985" },
+    rendering: { bg: "#fef9c3", color: "#854d0e" },
+    done: { bg: "#dcfce7", color: "#166534" },
+    error: { bg: "#fee2e2", color: "#991b1b" },
+  };
+  const badge = badgeColors[state];
+  els.statusBadge.textContent =
+    state === "idle" ? "Idle" : state === "fetching" ? "Fetching…" : state === "rendering" ? "Rendering…" : state === "done" ? "Done" : "Failed";
+  els.statusBadge.style.background = badge.bg;
+  els.statusBadge.style.color = badge.color;
+  updateDownloadState();
+}
+
 async function doRender() {
   const token = ++renderToken;
-  const fonts = await ensureFonts();
-  const resources = { fonts };
+  lastSvg = "";
+  updateDownloadState();
+  try {
+    const fonts = await ensureFonts();
+    const resources = { fonts };
 
-  els.status.textContent = "Fetching…";
-  const renderType = coerceRenderType(els.renderType.value);
-  const params = coerceParams(renderType, {
-    routeId: readString("routeId"),
-    directionId: readNumber("directionId"),
-    format: readString("format"),
-  });
+    setStatus("Fetching…", "fetching");
+    const renderType = coerceRenderType(els.renderType.value);
+    const params = coerceParams(renderType, {
+      routeId: readString("routeId"),
+      directionId: readNumber("directionId"),
+      format: readString("format"),
+    });
 
-  const client = makeMbtaClient();
-  let mbtaData: unknown = null;
-  if (renderType === "bus-route") {
-    await ensureBusRouteIds();
-    if (busRouteIdsState.status !== "loaded") {
-      els.status.textContent =
-        busRouteIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…";
-      return;
+    const client = makeMbtaClient();
+    let mbtaData: unknown = null;
+    if (renderType === "bus-route") {
+      await ensureBusRouteIds();
+      if (busRouteIdsState.status !== "loaded") {
+        setStatus(
+          busRouteIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…",
+          busRouteIdsState.status === "error" ? "error" : "fetching"
+        );
+        return;
+      }
+      mbtaData = await client.fetchBusRouteData(
+        (params as BusRouteParams).routeId,
+        (params as BusRouteParams).directionId
+      );
     }
-    mbtaData = await client.fetchBusRouteData(
-      (params as BusRouteParams).routeId,
-      (params as BusRouteParams).directionId
-    );
-  }
-  if (renderType === "subway-route") {
-    await ensureSubwayRouteIds();
-    if (subwayRouteIdsState.status !== "loaded") {
-      els.status.textContent =
-        subwayRouteIdsState.status === "error"
-          ? "Failed to load subway route IDs."
-          : "Loading routes…";
-      return;
+    if (renderType === "subway-route") {
+      await ensureSubwayRouteIds();
+      if (subwayRouteIdsState.status !== "loaded") {
+        setStatus(
+          subwayRouteIdsState.status === "error"
+            ? "Failed to load subway route IDs."
+            : "Loading routes…",
+          subwayRouteIdsState.status === "error" ? "error" : "fetching"
+        );
+        return;
+      }
+      mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
     }
-    mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
-  }
 
-  els.status.textContent = "Rendering…";
-  lastSvg = renderSvg({
-    params,
-    mbtaData,
-    resources,
-    type: renderType,
-  });
+    setStatus("Rendering…", "rendering");
+    lastSvg = renderSvg({
+      params,
+      mbtaData,
+      resources,
+      type: renderType,
+    });
+  } catch (error) {
+    console.error("Failed to render SVG", error);
+    setStatus("Failed to render SVG.", "error");
+    return;
+  }
 
   if (token !== renderToken) {
     return;
   }
 
   els.preview.innerHTML = lastSvg;
-  els.status.textContent = "Done.";
+  setStatus("Done.", "done");
 }
 
 function downloadSvg() {
@@ -296,4 +359,5 @@ els.apiKey.addEventListener("change", () => {
 renderParamFields(els.renderType.value);
 void ensureBusRouteIds();
 void ensureSubwayRouteIds();
+setStatus("Idle.", "idle");
 void doRender();
