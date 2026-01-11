@@ -8,6 +8,7 @@ import type {
 import { coerceRenderType, resolveFormatSize } from "./params.js";
 
 import { drawBusRoute } from "./drawBusRoute.js";
+import { drawSubwayRoute } from "./drawSubwayRoute.js";
 import type { OpenTypeFont } from "./fonts.js";
 
 export type RenderResources = {
@@ -56,16 +57,4 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   const svgNode = paper.project.exportSVG({ asString: true });
   paper.project.clear();
   return String(svgNode);
-}
-
-type DrawSubwayRouteInput = {
-  params: SubwayRouteParams;
-  mbtaData: unknown;
-  resources: RenderResources;
-};
-
-function drawSubwayRoute({ params, mbtaData, resources }: DrawSubwayRouteInput) {
-  void params;
-  void mbtaData;
-  void resources;
 }

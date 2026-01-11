@@ -1,7 +1,4 @@
-export const RENDER_TYPES = [
-  "bus-route",
-  "subway-route",
-] as const;
+export const RENDER_TYPES = ["bus-route", "subway-route"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
@@ -83,7 +80,5 @@ function coerceBaseParams(partial: Partial<BaseParams>): BaseParams {
 }
 
 export function resolveFormatSize(format?: string) {
-  return format === "notebook"
-    ? { width: 420, height: 595 }
-    : { width: 550, height: 700 };
+  return format === "notebook" ? { width: 420, height: 595 } : { width: 550, height: 700 };
 }

@@ -83,8 +83,11 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   }
 
   async function fetchSubwayRouteData(routeId: string): Promise<SubwayRouteResponse> {
+    const DIRECTION_ID = 0;
+
+    const routeQueryParam = routeId === "Green" ? "Green-B,Green-C,Green-D,Green-E" : routeId;
     const json = await getJson("/routes", {
-      "filter[id]": routeId,
+      "filter[id]": routeQueryParam,
       include: "route_patterns.representative_trip.shape",
     });
 
@@ -96,11 +99,21 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     }
 
     const routeData = data[0];
-    const route = String(routeData?.attributes?.short_name ?? "");
-    const description = String(routeData?.attributes?.long_name ?? "");
+    let route = getPill(routeData?.attributes?.long_name ?? "");
+    if (routeId == "Green") {
+      route = "GL";
+    }
+
+    const color = routeData?.attributes?.color;
+
+    let description = String(routeData?.attributes?.direction_destinations.join(" - ") ?? "");
+    if (routeId == "Green") {
+      description = "Green Line";
+    }
 
     const routePatterns = included
       .filter((x: any) => x?.type === "route_pattern")
+      .filter((rp: any) => rp?.attributes?.direction_id === DIRECTION_ID)
       .filter((rp: any) => {
         const t = rp?.attributes?.typicality;
         return typeof t === "number" ? t <= 2 : false;
@@ -133,7 +146,7 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
 
     const encodedPolylines = routePatterns.map(getShapePolyline);
 
-    return { route, description, encodedPolylines };
+    return { color, route, description, encodedPolylines };
   }
 
   async function fetchRouteIds(): Promise<{ id: string; shortName: string }[]> {
@@ -160,4 +173,17 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   }
 
   return { fetchBusRouteData, fetchSubwayRouteData, fetchRouteIds };
+}
+
+function getPill(routeName: string): string | undefined {
+  return {
+    "Red Line": "RL",
+    "Orange Line": "OL",
+    "Blue Line": "BL",
+    "Mattapan Trolley": "M",
+    "Green Line B": "GL-B",
+    "Green Line C": "GL-C",
+    "Green Line D": "GL-D",
+    "Green Line E": "GL-E",
+  }[routeName];
 }
