@@ -14,21 +14,91 @@ let interRegular: OpenTypeFont;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
-  <div style="display:flex; gap:24px; align-items:flex-start; font-family: system-ui;">
-    <div style="width: 320px;">
+  <style>
+    .layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      font-family: system-ui, sans-serif;
+    }
+    .panel {
+      width: 320px;
+    }
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    .field input,
+    .field select {
+      font-size: 0.95rem;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    .status {
+      margin: 0;
+      color: #4b5563;
+      font-size: 0.9rem;
+    }
+    .preview {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+  </style>
+  <div class="layout">
+    <div class="panel">
       <h2>Transit SVGs</h2>
-      <label>SVG Type
-        <select id="renderType">
-          ${RENDER_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("")}
-        </select>
-      </label><br/><br/>
-      <div id="paramFields"></div>
-      <label>MBTA API Key (optional) <input id="apiKey" type="password" /></label><br/><br/>
-      <button id="download">Download SVG</button>
-      <p id="status"></p>
+      <div class="form">
+        <div class="section-title">SVG Type</div>
+        <div class="field">
+          <label for="renderType">Type</label>
+          <select id="renderType">
+            ${RENDER_TYPES.map((type) => `<option value="${type}">${type}</option>`).join("")}
+          </select>
+        </div>
+        <div id="paramFields" class="form-section"></div>
+        <div class="field">
+          <label for="apiKey">MBTA API Key (optional)</label>
+          <input id="apiKey" type="password" />
+        </div>
+        <button id="download">Download SVG</button>
+        <p id="status" class="status"></p>
+      </div>
     </div>
     <div style="flex:1;">
-      <div id="preview" style="border:1px solid #ddd; padding:8px;"></div>
+      <div id="preview" class="preview"></div>
     </div>
   </div>
 `;
@@ -109,12 +179,13 @@ function buildRouteIdOptions(state: typeof busRouteIdsState, selectedRouteId: st
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
   const commonFields = `
-    <label>Format
+    <div class="field">
+      <label for="format">Format</label>
       <select id="format">
         <option value="notebook" selected>notebook</option>
         <option value="print">print</option>
       </select>
-    </label><br/><br/>
+    </div>
   `;
 
   if (resolved === "bus-route") {
@@ -125,17 +196,20 @@ function renderParamFields(type: string) {
     const routeOptions = buildRouteIdOptions(busRouteIdsState, selection);
     busRouteIdsState.lastSelected = routeOptions.selected;
     els.paramFields.innerHTML = `
-      <label>Route ID
+      <div class="section-title">Parameters</div>
+      <div class="field">
+        <label for="routeId">Route ID</label>
         <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
           ${routeOptions.options}
         </select>
-      </label><br/><br/>
-      <label>Direction ID
+      </div>
+      <div class="field">
+        <label for="directionId">Direction ID</label>
         <select id="directionId">
           <option value="0">0</option>
           <option value="1" selected>1</option>
         </select>
-      </label><br/><br/>
+      </div>
       ${commonFields}
     `;
     return;
@@ -149,17 +223,22 @@ function renderParamFields(type: string) {
     const routeOptions = buildRouteIdOptions(subwayRouteIdsState, selection);
     subwayRouteIdsState.lastSelected = routeOptions.selected;
     els.paramFields.innerHTML = `
-      <label>Route ID
+      <div class="section-title">Parameters</div>
+      <div class="field">
+        <label for="routeId">Route ID</label>
         <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
           ${routeOptions.options}
         </select>
-      </label><br/><br/>
+      </div>
       ${commonFields}
     `;
     return;
   }
 
-  els.paramFields.innerHTML = commonFields;
+  els.paramFields.innerHTML = `
+    <div class="section-title">Parameters</div>
+    ${commonFields}
+  `;
 }
 
 function readNumber(id: string) {
