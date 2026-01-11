@@ -113,7 +113,6 @@ function renderParamFields(type: string) {
         <option value="print">print</option>
       </select>
     </label><br/><br/>
-    <label>Seed <input id="seed" value="demo" /></label><br/><br/>
   `;
 
   if (resolved === "bus-route") {
@@ -217,7 +216,6 @@ async function doRender() {
   const params = coerceParams(renderType, {
     routeId: readString("routeId"),
     directionId: readNumber("directionId"),
-    seed: readString("seed"),
     format: readString("format"),
   });
 

@@ -3,7 +3,6 @@ export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
   format: string;
-  seed: string; // for deterministic randomness
 };
 
 export type BusRouteParams = BaseParams & {
@@ -24,7 +23,6 @@ export type RenderParams = RenderParamsByType[RenderType];
 
 export const DEFAULT_BASE_PARAMS: BaseParams = {
   format: "notebook",
-  seed: "demo",
 };
 
 export const DEFAULT_ROUTE_ID = "1";
@@ -75,7 +73,6 @@ function coerceBaseParams(partial: Partial<BaseParams>): BaseParams {
   return {
     ...DEFAULT_BASE_PARAMS,
     ...partial,
-    seed: String(partial.seed ?? DEFAULT_BASE_PARAMS.seed),
   };
 }
 
