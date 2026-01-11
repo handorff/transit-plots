@@ -49,11 +49,13 @@ const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
   lastSelected: "1",
+  pending: undefined as Promise<void> | undefined,
 };
 const subwayRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
   lastSelected: "Red",
+  pending: undefined as Promise<void> | undefined,
 };
 
 function scheduleRender() {
@@ -171,33 +173,51 @@ function readString(id: string) {
 }
 
 async function ensureBusRouteIds() {
-  if (busRouteIdsState.status === "loading" || busRouteIdsState.status === "loaded") return;
+  if (busRouteIdsState.status === "loaded") return;
+  if (busRouteIdsState.status === "loading") {
+    await busRouteIdsState.pending;
+    return;
+  }
   busRouteIdsState.status = "loading";
   renderParamFields(els.renderType.value);
-  try {
-    const client = makeMbtaClient();
-    busRouteIdsState.data = await client.fetchRouteIds();
-    busRouteIdsState.status = "loaded";
-  } catch (error) {
-    busRouteIdsState.status = "error";
-    console.error("Failed to load MBTA route IDs", error);
-  }
-  renderParamFields(els.renderType.value);
+  busRouteIdsState.pending = (async () => {
+    try {
+      const client = makeMbtaClient();
+      busRouteIdsState.data = await client.fetchRouteIds();
+      busRouteIdsState.status = "loaded";
+    } catch (error) {
+      busRouteIdsState.status = "error";
+      console.error("Failed to load MBTA route IDs", error);
+    } finally {
+      busRouteIdsState.pending = undefined;
+    }
+    renderParamFields(els.renderType.value);
+  })();
+  await busRouteIdsState.pending;
 }
 
 async function ensureSubwayRouteIds() {
-  if (subwayRouteIdsState.status === "loading" || subwayRouteIdsState.status === "loaded") return;
+  if (subwayRouteIdsState.status === "loaded") return;
+  if (subwayRouteIdsState.status === "loading") {
+    await subwayRouteIdsState.pending;
+    return;
+  }
   subwayRouteIdsState.status = "loading";
   renderParamFields(els.renderType.value);
-  try {
-    const client = makeMbtaClient();
-    subwayRouteIdsState.data = await client.fetchSubwayRouteIds();
-    subwayRouteIdsState.status = "loaded";
-  } catch (error) {
-    subwayRouteIdsState.status = "error";
-    console.error("Failed to load MBTA subway route IDs", error);
-  }
-  renderParamFields(els.renderType.value);
+  subwayRouteIdsState.pending = (async () => {
+    try {
+      const client = makeMbtaClient();
+      subwayRouteIdsState.data = await client.fetchSubwayRouteIds();
+      subwayRouteIdsState.status = "loaded";
+    } catch (error) {
+      subwayRouteIdsState.status = "error";
+      console.error("Failed to load MBTA subway route IDs", error);
+    } finally {
+      subwayRouteIdsState.pending = undefined;
+    }
+    renderParamFields(els.renderType.value);
+  })();
+  await subwayRouteIdsState.pending;
 }
 
 async function ensureFonts() {
@@ -213,45 +233,61 @@ async function doRender() {
 
   els.status.textContent = "Fetching…";
   const renderType = coerceRenderType(els.renderType.value);
-  const params = coerceParams(renderType, {
-    routeId: readString("routeId"),
-    directionId: readNumber("directionId"),
-    format: readString("format"),
-  });
-
   const client = makeMbtaClient();
-  let mbtaData: unknown = null;
-  if (renderType === "bus-route") {
-    await ensureBusRouteIds();
-    if (busRouteIdsState.status !== "loaded") {
-      els.status.textContent =
-        busRouteIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…";
-      return;
-    }
-    mbtaData = await client.fetchBusRouteData(
-      (params as BusRouteParams).routeId,
-      (params as BusRouteParams).directionId
-    );
-  }
-  if (renderType === "subway-route") {
-    await ensureSubwayRouteIds();
-    if (subwayRouteIdsState.status !== "loaded") {
-      els.status.textContent =
-        subwayRouteIdsState.status === "error"
-          ? "Failed to load subway route IDs."
-          : "Loading routes…";
-      return;
-    }
-    mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
-  }
 
-  els.status.textContent = "Rendering…";
-  lastSvg = renderSvg({
-    params,
-    mbtaData,
-    resources,
-    type: renderType,
-  });
+  try {
+    if (renderType === "bus-route") {
+      await ensureBusRouteIds();
+      if (busRouteIdsState.status !== "loaded") {
+        els.status.textContent =
+          busRouteIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…";
+        return;
+      }
+    }
+    if (renderType === "subway-route") {
+      await ensureSubwayRouteIds();
+      if (subwayRouteIdsState.status !== "loaded") {
+        els.status.textContent =
+          subwayRouteIdsState.status === "error"
+            ? "Failed to load subway route IDs."
+            : "Loading routes…";
+        return;
+      }
+    }
+
+    const fallbackRouteId =
+      renderType === "bus-route"
+        ? busRouteIdsState.data[0]?.id
+        : subwayRouteIdsState.data[0]?.id;
+    const params = coerceParams(renderType, {
+      routeId: readString("routeId") || fallbackRouteId,
+      directionId: readNumber("directionId"),
+      format: readString("format"),
+    });
+
+    let mbtaData: unknown = null;
+    if (renderType === "bus-route") {
+      mbtaData = await client.fetchBusRouteData(
+        (params as BusRouteParams).routeId,
+        (params as BusRouteParams).directionId
+      );
+    }
+    if (renderType === "subway-route") {
+      mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
+    }
+
+    els.status.textContent = "Rendering…";
+    lastSvg = renderSvg({
+      params,
+      mbtaData,
+      resources,
+      type: renderType,
+    });
+  } catch (error) {
+    console.error("Failed to render SVG", error);
+    els.status.textContent = "Failed to load data.";
+    return;
+  }
 
   if (token !== renderToken) {
     return;
