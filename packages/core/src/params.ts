@@ -1,6 +1,4 @@
-export const RENDER_TYPES = [
-  "bus-route",
-] as const;
+export const RENDER_TYPES = ["bus-route", "subway-route"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
@@ -13,8 +11,13 @@ export type BusRouteParams = BaseParams & {
   directionId: number;
 };
 
+export type SubwayRouteParams = BaseParams & {
+  routeId: string;
+};
+
 export type RenderParamsByType = {
   "bus-route": BusRouteParams;
+  "subway-route": SubwayRouteParams;
 };
 
 export type RenderParams = RenderParamsByType[RenderType];
@@ -32,10 +35,15 @@ export const DEFAULT_BUS_ROUTE_PARAMS: BusRouteParams = {
   directionId: 0,
 };
 
+export const DEFAULT_SUBWAY_ROUTE_PARAMS: SubwayRouteParams = {
+  ...DEFAULT_BASE_PARAMS,
+  routeId: "1",
+};
+
 // very small validation/coercion helper
 export function coerceParams(
   type: RenderType,
-  partial: Partial<BusRouteParams & BaseParams>
+  partial: Partial<BusRouteParams & SubwayRouteParams & BaseParams>
 ): RenderParamsByType[RenderType] {
   switch (type) {
     case "bus-route":
@@ -43,6 +51,11 @@ export function coerceParams(
         ...coerceBaseParams(partial),
         routeId: String(partial.routeId ?? DEFAULT_ROUTE_ID),
         directionId: partial.directionId ?? DEFAULT_BUS_ROUTE_PARAMS.directionId,
+      };
+    case "subway-route":
+      return {
+        ...coerceBaseParams(partial),
+        routeId: String(partial.routeId ?? DEFAULT_ROUTE_ID),
       };
     default:
       return {
@@ -67,7 +80,5 @@ function coerceBaseParams(partial: Partial<BaseParams>): BaseParams {
 }
 
 export function resolveFormatSize(format?: string) {
-  return format === "notebook"
-    ? { width: 420, height: 595 }
-    : { width: 550, height: 700 };
+  return format === "notebook" ? { width: 420, height: 595 } : { width: 550, height: 700 };
 }

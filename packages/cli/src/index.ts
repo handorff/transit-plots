@@ -15,7 +15,7 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
-import type { BusRouteParams } from "@transit-plots/core";
+import type { BusRouteParams, SubwayRouteParams } from "@transit-plots/core";
 
 const argv = await yargs(hideBin(process.argv))
   .option("routeId", { type: "string", default: "1" })
@@ -43,6 +43,9 @@ if (renderType === "bus-route") {
     (params as BusRouteParams).routeId,
     (params as BusRouteParams).directionId
   );
+}
+if (renderType === "subway-route") {
+  mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
 }
 
 const fonts = {

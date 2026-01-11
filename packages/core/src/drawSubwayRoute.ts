@@ -8,12 +8,11 @@ import {
   drawFullLines,
 } from "./renderHelpers.js";
 
-import type { BusRouteParams } from "./params.js";
+import type { SubwayRouteParams } from "./params.js";
 import type { RenderResources } from "./render.js";
 
 // Format-independent constants
 const PILL_HEIGHT_RATIO = 0.5;
-const PILL_TEXT_HEIGHT_FACTOR = 0.6;
 const DESCRIPTION_LINE_HEIGHT_FACTOR = 4 / 9;
 const DESCRIPTION_LINE_SPACING_FACTOR = 0.2;
 const MAP_INNER_MARGIN_FACTOR = 0.04;
@@ -26,12 +25,11 @@ const NOTEBOOK_MUJI_B5_LINED = {
   leftRightMargin: 32,
   topBottomMargin: 64,
   mapTopMargin: 24,
-  mapOutline: true,
   descriptionMargin: 16,
   pillWidth: 72,
-  pillFillStyle: "OUTSIDE",
-  hatchSpacing: 1.5,
-  mapOffset: null,
+  pillHatchSpacing: 1.2,
+  descriptionHatchSpacing: 1.5,
+  mapOffset: 0.7,
 };
 
 const PRINT_11_BY_14 = {
@@ -42,24 +40,26 @@ const PRINT_11_BY_14 = {
   leftRightMargin: 64,
   topBottomMargin: 64,
   mapTopMargin: 32,
-  mapOutline: true,
   descriptionMargin: 16,
   pillWidth: 96,
-  pillFillStyle: "OUTSIDE",
-  hatchSpacing: 1.2,
-  mapOffset: 0.5,
+  pillHatchSpacing: 1.0,
+  descriptionHatchSpacing: 1.2,
+  mapOffset: 0.5, // check this value
 };
 
-export function drawBusRoute({
+export function drawSubwayRoute({
   params,
   mbtaData,
   resources,
 }: {
-  params: BusRouteParams;
+  params: SubwayRouteParams;
   mbtaData: any;
   resources: RenderResources;
 }) {
   const FORMAT = params.format === "notebook" ? NOTEBOOK_MUJI_B5_LINED : PRINT_11_BY_14;
+
+  const PILL_TEXT_HEIGHT_FACTOR =
+    params.routeId.includes("Green") && params.routeId !== "Green" ? 0.45 : 0.6;
 
   // Format-dependent constants
   const HEIGHT = FORMAT.height;
@@ -68,11 +68,10 @@ export function drawBusRoute({
   const LEFT_RIGHT_MARGIN = FORMAT.leftRightMargin;
   const TOP_BOTTOM_MARGIN = FORMAT.topBottomMargin;
   const MAP_TOP_MARGIN = FORMAT.mapTopMargin;
-  const MAP_OUTLINE = FORMAT.mapOutline;
   const DESCRIPTION_MARGIN = FORMAT.descriptionMargin;
   const PILL_WIDTH = FORMAT.pillWidth;
-  const PILL_FILL_STYLE = FORMAT.pillFillStyle;
-  const HATCH_SPACING = FORMAT.hatchSpacing;
+  const PILL_HATCH_SPACING = FORMAT.pillHatchSpacing;
+  const DESCRIPTION_HATCH_SPACING = FORMAT.descriptionHatchSpacing;
   const MAP_OFFSET = FORMAT.mapOffset;
 
   // Derived values
@@ -80,7 +79,7 @@ export function drawBusRoute({
   const PILL_Y = TOP_BOTTOM_MARGIN;
   const PILL_HEIGHT = PILL_WIDTH * PILL_HEIGHT_RATIO;
   const DESCRIPTION_X = PILL_X + PILL_WIDTH + DESCRIPTION_MARGIN;
-  const DESCRIPTION_Y = PILL_Y;
+  const DESCRIPTION_Y = params.routeId === "Green" ? PILL_Y + PILL_HEIGHT / 6 : PILL_Y;
   const pageWidth = WIDTH - BINDING_WIDTH;
   const DESCRIPTION_MAX_WIDTH =
     pageWidth - (PILL_WIDTH + 2 * LEFT_RIGHT_MARGIN + DESCRIPTION_MARGIN);
@@ -91,15 +90,16 @@ export function drawBusRoute({
   const MAP_HEIGHT = HEIGHT - (2 * TOP_BOTTOM_MARGIN + PILL_HEIGHT + MAP_TOP_MARGIN);
   const MAP_INNER_MARGIN = Math.min(MAP_WIDTH, MAP_HEIGHT) * MAP_INNER_MARGIN_FACTOR;
 
-  function drawPillFilled(route: string) {
+  function drawPillFilled(route: string, color: string) {
     const position = { x: PILL_X, y: PILL_Y };
     const text = route;
     const pillSize = { width: PILL_WIDTH, height: PILL_HEIGHT };
     const textSize = { maxHeight: PILL_HEIGHT * PILL_TEXT_HEIGHT_FACTOR };
     const styleOpts = {
       font: resources.fonts?.interBold,
-      fillStyle: PILL_FILL_STYLE,
-      hatchSpacing: HATCH_SPACING,
+      color: color,
+      fillStyle: "OUTSIDE",
+      hatchSpacing: PILL_HATCH_SPACING,
     };
 
     drawFixedSizePill(position, text, pillSize, textSize, styleOpts);
@@ -116,14 +116,14 @@ export function drawBusRoute({
     const styleOpts = {
       font: resources.fonts?.interRegular,
       isFilled: true,
-      hatchSpacing: HATCH_SPACING,
+      hatchSpacing: DESCRIPTION_HATCH_SPACING,
     };
 
     const { height } = drawFixedHeightTextLines(position, lines, textSize, styleOpts);
     return height;
   }
 
-  function drawLine(encodedPolylines: any, descriptionHeight: number) {
+  function drawLine(encodedPolylines: any, descriptionHeight: number, color: string) {
     const pillAndDescriptionHeight = Math.max(PILL_HEIGHT, descriptionHeight);
     const MAP_Y = TOP_BOTTOM_MARGIN + pillAndDescriptionHeight + MAP_TOP_MARGIN;
     const MAP_HEIGHT = HEIGHT - (2 * TOP_BOTTOM_MARGIN + pillAndDescriptionHeight + MAP_TOP_MARGIN);
@@ -133,22 +133,20 @@ export function drawBusRoute({
       width: MAP_WIDTH - 2 * MAP_INNER_MARGIN,
       height: MAP_HEIGHT - 2 * MAP_INNER_MARGIN,
     };
-    const styleOpts = { offset: MAP_OFFSET, color: "black" };
+    const styleOpts = { offset: MAP_OFFSET, color };
     drawFullLines(encodedPolylines, position, mapSize, styleOpts);
 
     // Draw border
-    if (MAP_OUTLINE) {
-      const border = new paper.Path.Rectangle({
-        point: [MAP_X, MAP_Y],
-        size: [MAP_WIDTH, MAP_HEIGHT],
-        strokeColor: "black",
-        strokeWidth: 1,
-      });
-    }
+    const border = new paper.Path.Rectangle({
+      point: [MAP_X, MAP_Y],
+      size: [MAP_WIDTH, MAP_HEIGHT],
+      strokeColor: "black",
+      strokeWidth: 1,
+    });
   }
 
   drawOutline(FORMAT.width, FORMAT.height, FORMAT.bindingWidth);
-  drawPillFilled(mbtaData.route);
+  drawPillFilled(mbtaData.route, mbtaData.color);
   const descriptionHeight = drawDescriptionAndReturnHeight(mbtaData.description);
-  drawLine(mbtaData.encodedPolylines, descriptionHeight);
+  drawLine(mbtaData.encodedPolylines, descriptionHeight, mbtaData.color);
 }

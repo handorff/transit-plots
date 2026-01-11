@@ -1,4 +1,4 @@
-import type { BusRouteParams, OpenTypeFont } from "@transit-plots/core";
+import type { BusRouteParams, OpenTypeFont, SubwayRouteParams } from "@transit-plots/core";
 import {
   RENDER_TYPES,
   coerceParams,
@@ -135,6 +135,14 @@ function renderParamFields(type: string) {
     return;
   }
 
+  if (resolved === "subway-route") {
+    els.paramFields.innerHTML = `
+      <label>Route ID <input id="routeId" value="Red" /></label><br/><br/>
+      ${commonFields}
+    `;
+    return;
+  }
+
   els.paramFields.innerHTML = commonFields;
 }
 
@@ -196,6 +204,9 @@ async function doRender() {
       (params as BusRouteParams).routeId,
       (params as BusRouteParams).directionId
     );
+  }
+  if (renderType === "subway-route") {
+    mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
   }
 
   els.status.textContent = "Rendering…";

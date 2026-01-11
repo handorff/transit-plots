@@ -3,10 +3,12 @@ import type {
   BusRouteParams,
   RenderParamsByType,
   RenderType,
+  SubwayRouteParams,
 } from "./params.js";
 import { coerceRenderType, resolveFormatSize } from "./params.js";
 
 import { drawBusRoute } from "./drawBusRoute.js";
+import { drawSubwayRoute } from "./drawSubwayRoute.js";
 import type { OpenTypeFont } from "./fonts.js";
 
 export type RenderResources = {
@@ -42,6 +44,9 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   switch (resolvedType) {
     case "bus-route":
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
+      break;
+    case "subway-route":
+      drawSubwayRoute({ params: params as SubwayRouteParams, mbtaData, resources });
       break;
     default:
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
