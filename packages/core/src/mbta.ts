@@ -172,7 +172,46 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return routes.map(({ id, shortName }) => ({ id, shortName }));
   }
 
-  return { fetchBusRouteData, fetchSubwayRouteData, fetchRouteIds };
+  async function fetchSubwayRouteIds(): Promise<{ id: string; shortName: string }[]> {
+    const json = await getJson("/routes", {
+      "page[limit]": "1000",
+      sort: "sort_order",
+      "filter[type]": "0,1",
+    });
+    const data = Array.isArray(json?.data) ? json.data : [];
+    const routes: { id: string; shortName: string; sortOrder: number }[] = data
+      .filter((route: any) => [0, 1].includes(route?.attributes?.type))
+      .map((route: any) => {
+        const id = String(route?.id ?? "");
+        const shortName = String(route?.attributes?.long_name ?? route?.attributes?.short_name ?? id);
+        return {
+          id,
+          shortName: shortName || id,
+          sortOrder:
+            typeof route?.attributes?.sort_order === "number"
+              ? route.attributes.sort_order
+              : Number.POSITIVE_INFINITY,
+        };
+      })
+      .filter((route: { id: string }) => route.id.length > 0);
+
+    const greenSortOrders = routes
+      .filter((route) => route.id.startsWith("Green-"))
+      .map((route) => route.sortOrder)
+      .filter((sortOrder) => Number.isFinite(sortOrder));
+    const greenSortOrder =
+      greenSortOrders.length > 0 ? Math.min(...greenSortOrders) - 0.5 : 0;
+    routes.push({
+      id: "Green",
+      shortName: "Green Line (All branches)",
+      sortOrder: greenSortOrder,
+    });
+
+    routes.sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+    return routes.map(({ id, shortName }) => ({ id, shortName }));
+  }
+
+  return { fetchBusRouteData, fetchSubwayRouteData, fetchRouteIds, fetchSubwayRouteIds };
 }
 
 function getPill(routeName: string): string | undefined {
