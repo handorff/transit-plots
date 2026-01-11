@@ -17,14 +17,37 @@ import {
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
 import type { BusRouteParams, SubwayRouteParams } from "@transit-plots/core";
 
-const argv = await yargs(hideBin(process.argv))
-  .option("routeId", { type: "string", default: "1" })
-  .option("directionId", { type: "number", default: 0 })
+const cli = yargs(hideBin(process.argv))
+  .command("help", "Show help", () => {}, () => {
+    cli.showHelp();
+    process.exit(0);
+  })
+  .option("routeId", { type: "string" })
+  .option("directionId", { type: "number" })
   .option("seed", { type: "string", default: "demo" })
-  .option("format", { type: "string", choices: ["notebook", "print"], default: "notebook" })
-  .option("type", { choices: [...RENDER_TYPES], default: "bus-route" })
+  .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
+  .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
-  .parse();
+  .check((argv) => {
+    if (argv.type === "bus-route") {
+      if (!argv.routeId) {
+        throw new Error("routeId is required when type is bus-route");
+      }
+      if (argv.directionId === undefined) {
+        throw new Error("directionId is required when type is bus-route");
+      }
+    }
+    if (argv.type === "subway-route") {
+      if (!argv.routeId) {
+        throw new Error("routeId is required when type is subway-route");
+      }
+    }
+    return true;
+  })
+  .showHelpOnFail(true)
+  .help();
+
+const argv = await cli.parse();
 
 const renderType = coerceRenderType(argv.type as string);
 const params = coerceParams(renderType, {
