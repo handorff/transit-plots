@@ -3,6 +3,7 @@ import type {
   BusRouteParams,
   RenderParamsByType,
   RenderType,
+  SubwayRouteParams,
 } from "./params.js";
 import { coerceRenderType, resolveFormatSize } from "./params.js";
 
@@ -43,6 +44,9 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
     case "bus-route":
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
+    case "subway-route":
+      drawSubwayRoute({ params: params as SubwayRouteParams, mbtaData, resources });
+      break;
     default:
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
       break;
@@ -52,4 +56,16 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   const svgNode = paper.project.exportSVG({ asString: true });
   paper.project.clear();
   return String(svgNode);
+}
+
+type DrawSubwayRouteInput = {
+  params: SubwayRouteParams;
+  mbtaData: unknown;
+  resources: RenderResources;
+};
+
+function drawSubwayRoute({ params, mbtaData, resources }: DrawSubwayRouteInput) {
+  void params;
+  void mbtaData;
+  void resources;
 }
