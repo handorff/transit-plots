@@ -24,7 +24,6 @@ const cli = yargs(hideBin(process.argv))
   })
   .option("routeId", { type: "string" })
   .option("directionId", { type: "number" })
-  .option("seed", { type: "string", default: "demo" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
@@ -53,7 +52,6 @@ const renderType = coerceRenderType(argv.type as string);
 const params = coerceParams(renderType, {
   routeId: argv.routeId,
   directionId: argv.directionId,
-  seed: argv.seed,
   format: argv.format,
 });
 
