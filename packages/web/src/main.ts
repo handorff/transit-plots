@@ -45,10 +45,15 @@ const els = {
 let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
-const routeIdsState = {
+const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
   lastSelected: "1",
+};
+const subwayRouteIdsState = {
+  status: "idle" as "idle" | "loading" | "loaded" | "error",
+  data: [] as { id: string; shortName: string }[],
+  lastSelected: "Red",
 };
 
 function scheduleRender() {
@@ -65,17 +70,17 @@ function makeMbtaClient() {
   return createMbtaClient({ apiKey: els.apiKey.value || undefined });
 }
 
-function resolveRouteIdSelection() {
+function resolveRouteIdSelection(state: typeof busRouteIdsState) {
   const current = readString("routeId");
-  return current ?? routeIdsState.lastSelected;
+  return current ?? state.lastSelected;
 }
 
-function buildRouteIdOptions(selectedRouteId: string) {
-  if (routeIdsState.status === "loaded" && routeIdsState.data.length > 0) {
-    const resolvedSelection = routeIdsState.data.some((route) => route.id === selectedRouteId)
+function buildRouteIdOptions(state: typeof busRouteIdsState, selectedRouteId: string) {
+  if (state.status === "loaded" && state.data.length > 0) {
+    const resolvedSelection = state.data.some((route) => route.id === selectedRouteId)
       ? selectedRouteId
-      : routeIdsState.data[0]?.id;
-    const options = routeIdsState.data
+      : state.data[0]?.id;
+    const options = state.data
       .map(
         (route) =>
           `<option value="${route.id}" ${route.id === resolvedSelection ? "selected" : ""}>${route.shortName}</option>`
@@ -84,7 +89,7 @@ function buildRouteIdOptions(selectedRouteId: string) {
     return { options, disabled: false, selected: resolvedSelection ?? selectedRouteId };
   }
 
-  if (routeIdsState.status === "error") {
+  if (state.status === "error") {
     return {
       options: `<option value="" selected>Unable to load routes</option>`,
       disabled: true,
@@ -112,12 +117,12 @@ function renderParamFields(type: string) {
   `;
 
   if (resolved === "bus-route") {
-    if (routeIdsState.status === "idle") {
-      void ensureRouteIds();
+    if (busRouteIdsState.status === "idle") {
+      void ensureBusRouteIds();
     }
-    const selection = resolveRouteIdSelection();
-    const routeOptions = buildRouteIdOptions(selection);
-    routeIdsState.lastSelected = routeOptions.selected;
+    const selection = resolveRouteIdSelection(busRouteIdsState);
+    const routeOptions = buildRouteIdOptions(busRouteIdsState, selection);
+    busRouteIdsState.lastSelected = routeOptions.selected;
     els.paramFields.innerHTML = `
       <label>Route ID
         <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
@@ -136,8 +141,18 @@ function renderParamFields(type: string) {
   }
 
   if (resolved === "subway-route") {
+    if (subwayRouteIdsState.status === "idle") {
+      void ensureSubwayRouteIds();
+    }
+    const selection = resolveRouteIdSelection(subwayRouteIdsState);
+    const routeOptions = buildRouteIdOptions(subwayRouteIdsState, selection);
+    subwayRouteIdsState.lastSelected = routeOptions.selected;
     els.paramFields.innerHTML = `
-      <label>Route ID <input id="routeId" value="Red" /></label><br/><br/>
+      <label>Route ID
+        <select id="routeId" ${routeOptions.disabled ? "disabled" : ""}>
+          ${routeOptions.options}
+        </select>
+      </label><br/><br/>
       ${commonFields}
     `;
     return;
@@ -156,17 +171,32 @@ function readString(id: string) {
   return input ? input.value : undefined;
 }
 
-async function ensureRouteIds() {
-  if (routeIdsState.status === "loading" || routeIdsState.status === "loaded") return;
-  routeIdsState.status = "loading";
+async function ensureBusRouteIds() {
+  if (busRouteIdsState.status === "loading" || busRouteIdsState.status === "loaded") return;
+  busRouteIdsState.status = "loading";
   renderParamFields(els.renderType.value);
   try {
     const client = makeMbtaClient();
-    routeIdsState.data = await client.fetchRouteIds();
-    routeIdsState.status = "loaded";
+    busRouteIdsState.data = await client.fetchRouteIds();
+    busRouteIdsState.status = "loaded";
   } catch (error) {
-    routeIdsState.status = "error";
+    busRouteIdsState.status = "error";
     console.error("Failed to load MBTA route IDs", error);
+  }
+  renderParamFields(els.renderType.value);
+}
+
+async function ensureSubwayRouteIds() {
+  if (subwayRouteIdsState.status === "loading" || subwayRouteIdsState.status === "loaded") return;
+  subwayRouteIdsState.status = "loading";
+  renderParamFields(els.renderType.value);
+  try {
+    const client = makeMbtaClient();
+    subwayRouteIdsState.data = await client.fetchSubwayRouteIds();
+    subwayRouteIdsState.status = "loaded";
+  } catch (error) {
+    subwayRouteIdsState.status = "error";
+    console.error("Failed to load MBTA subway route IDs", error);
   }
   renderParamFields(els.renderType.value);
 }
@@ -194,10 +224,10 @@ async function doRender() {
   const client = makeMbtaClient();
   let mbtaData: unknown = null;
   if (renderType === "bus-route") {
-    await ensureRouteIds();
-    if (routeIdsState.status !== "loaded") {
+    await ensureBusRouteIds();
+    if (busRouteIdsState.status !== "loaded") {
       els.status.textContent =
-        routeIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…";
+        busRouteIdsState.status === "error" ? "Failed to load route IDs." : "Loading routes…";
       return;
     }
     mbtaData = await client.fetchBusRouteData(
@@ -206,6 +236,14 @@ async function doRender() {
     );
   }
   if (renderType === "subway-route") {
+    await ensureSubwayRouteIds();
+    if (subwayRouteIdsState.status !== "loaded") {
+      els.status.textContent =
+        subwayRouteIdsState.status === "error"
+          ? "Failed to load subway route IDs."
+          : "Loading routes…";
+      return;
+    }
     mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
   }
 
@@ -245,12 +283,19 @@ els.paramFields.addEventListener("input", () => scheduleRender());
 els.paramFields.addEventListener("change", () => scheduleRender());
 els.apiKey.addEventListener("input", () => scheduleRender());
 els.apiKey.addEventListener("change", () => {
-  routeIdsState.status = "idle";
-  void ensureRouteIds();
+  busRouteIdsState.status = "idle";
+  subwayRouteIdsState.status = "idle";
+  if (els.renderType.value === "bus-route") {
+    void ensureBusRouteIds();
+  }
+  if (els.renderType.value === "subway-route") {
+    void ensureSubwayRouteIds();
+  }
   scheduleRender();
 });
 
 // Render once on load
 renderParamFields(els.renderType.value);
-void ensureRouteIds();
+void ensureBusRouteIds();
+void ensureSubwayRouteIds();
 void doRender();
