@@ -1,0 +1,15 @@
+.preview-panel {
+  background: #f6f7fb;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  color: #1f2937;
+  min-height: 240px;
+  padding: 16px;
+}
+
+.preview-panel svg {
+  display: block;
+  height: auto;
+  max-width: 100%;
+  width: 100%;
+}

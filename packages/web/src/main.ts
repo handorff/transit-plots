@@ -8,6 +8,7 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont";
+import "./style.css";
 
 let interBold: OpenTypeFont;
 let interRegular: OpenTypeFont;
@@ -28,7 +29,7 @@ app.innerHTML = `
       <p id="status"></p>
     </div>
     <div style="flex:1;">
-      <div id="preview" style="border:1px solid #ddd; padding:8px;"></div>
+      <div id="preview" class="preview-panel">Rendering preview…</div>
     </div>
   </div>
 `;
@@ -231,6 +232,7 @@ async function doRender() {
   const fonts = await ensureFonts();
   const resources = { fonts };
 
+  els.preview.textContent = "Rendering preview…";
   els.status.textContent = "Fetching…";
   const renderType = coerceRenderType(els.renderType.value);
   const client = makeMbtaClient();
