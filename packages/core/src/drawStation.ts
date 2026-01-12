@@ -10,6 +10,44 @@ import {
 import type { StationParams } from "./params.js";
 import type { RenderResources } from "./render.js";
 
+type RouteDescriptor = {
+  id?: string;
+  name?: string;
+  shortName?: string;
+  longName?: string;
+  color: string;
+};
+
+type RoutePill = RouteDescriptor & {
+  label: string;
+};
+
+type MapPolyline = {
+  polyline: string;
+  color: string;
+  routeId?: string;
+};
+
+type MapBounds = {
+  minLat: number;
+  maxLat: number;
+  minLong: number;
+  maxLong: number;
+};
+
+type MapData = {
+  lat: number;
+  long: number;
+  polylines: MapPolyline[];
+  bounds?: MapBounds;
+};
+
+type StationRenderData = {
+  stopName: string;
+  routePills: RoutePill[];
+  mapData: MapData;
+};
+
 // Format-independent constants
 const PILL_HEIGHT_RATIO = 0.5;
 const PILL_TEXT_HEIGHT_FACTOR = 0.6;
@@ -56,7 +94,7 @@ export function drawStation({
   resources,
 }: {
   params: StationParams;
-  mbtaData: any;
+  mbtaData: StationRenderData;
   resources: RenderResources;
 }) {
   const FORMAT = params.format === "notebook" ? NOTEBOOK_MUJI_B5_LINED : PRINT_11_BY_14;
@@ -104,7 +142,7 @@ export function drawStation({
     return drawFixedHeightTextLines(position, lines, textSize, styleOpts);
   }
 
-  function drawRoutePill(route: any) {
+  function drawRoutePill(route: RoutePill) {
     const position = { x: 0, y: 0 };
     const text = route.label;
     const size = {
@@ -123,13 +161,13 @@ export function drawStation({
     return drawVariableWidthPill(position, text, size, styleOpts);
   }
 
-  function drawRoutePillsAndReturnHeight(routePills: any, pillY: number) {
+  function drawRoutePillsAndReturnHeight(routePills: RoutePill[], pillY: number) {
     // Draw each route pill at 0, 0
-    const pills = routePills.map((routePill: any) => drawRoutePill(routePill));
+    const pills = routePills.map((routePill) => drawRoutePill(routePill));
 
     // Compute pill widths
-    const pillWidths = pills.map((pill: any) => {
-      const bounds = pill.reduce((bbox: any, item: any) => {
+    const pillWidths = pills.map((pill) => {
+      const bounds = pill.reduce<paper.Rectangle | null>((bbox, item) => {
         if (item.bounds.height === 0 && item.bounds.width === 0) {
           return bbox;
         }
@@ -137,17 +175,17 @@ export function drawStation({
         return !bbox ? item.bounds : bbox.unite(item.bounds);
       }, null);
 
-      return bounds.width;
+      return bounds?.width ?? 0;
     });
 
     // Break into lines and compute offsets
     // v1: Just make a new line each time we fill one up
     // TODO: Consider balancing line lengths
-    const lines: any[] = [];
+    const lines: Array<[number, number]> = [];
     let currentX = 0;
     let currentY = 0;
 
-    pillWidths.forEach((w: any) => {
+    pillWidths.forEach((w) => {
       if (currentX + w < BODY_MAX_WIDTH) {
         // can place on this line
         lines.push([currentX, currentY]);
@@ -164,13 +202,13 @@ export function drawStation({
     // Translate pills into position
     for (const [index, pillPaths] of pills.entries()) {
       const [x, y] = lines[index];
-      pillPaths.forEach((path: any) => path.translate(new paper.Point(x + PILL_X, y + pillY)));
+      pillPaths.forEach((path) => path.translate(new paper.Point(x + PILL_X, y + pillY)));
     }
 
     return currentY + PILL_HEIGHT;
   }
 
-  function drawMap(mapData: any, mapY: number) {
+  function drawMap(mapData: MapData, mapY: number) {
     const position = { x: MAP_X, y: mapY };
     const mapSize = { width: MAP_WIDTH, height: MAP_HEIGHT };
     const windowSize = {
@@ -179,7 +217,7 @@ export function drawStation({
       widthLong: MAP_WIDTH_LONG,
     };
 
-    mapData.polylines.map((input: any) => {
+    mapData.polylines.forEach((input) => {
       let { polyline, color } = input;
       const offset = color === "000000" ? null : MAP_COLOR_OFFSET;
       color = (parseInt(color, 16) + 1).toString(16).padStart(6, "0");

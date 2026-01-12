@@ -360,9 +360,11 @@ type StyleOpts3 = {
   offset: number | null;
 };
 
+export type EncodedPolylineCollection = string[];
+
 // Draw multiple whole lines and fit to the same size window
 export function drawFullLines(
-  encodedPolylines: string[],
+  encodedPolylines: EncodedPolylineCollection,
   position: Position,
   mapSize: MapSize,
   styleOpts: StyleOpts3
@@ -402,12 +404,15 @@ export function drawFullLines(
 
   const allPaths: paper.PathItem[] = [];
   mapPaths.forEach((mapPath) => {
-    const p1 = PaperOffset.offset(mapPath, OFFSET);
-    const p2 = PaperOffset.offset(mapPath, -OFFSET);
-    allPaths.push(mapPath, p1, p2);
+    if (!isOffsettablePath(mapPath)) {
+      allPaths.push(mapPath);
+    } else {
+      const p1 = PaperOffset.offset(mapPath, OFFSET);
+      const p2 = PaperOffset.offset(mapPath, -OFFSET);
+      allPaths.push(mapPath, p1, p2);
+    }
   });
   return allPaths;
-}
 
 function centerPaths(
   paths: paper.PathItem[],
