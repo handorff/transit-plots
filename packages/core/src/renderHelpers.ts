@@ -426,7 +426,8 @@ function centerPaths(
   const dx = x + (w - width) / 2 - xMin;
   const dy = y + (h - height) / 2 - yMin;
 
-  return paths.map((p) => p.translate(new paper.Point(dx, dy)));
+  paths.forEach((p) => p.translate(new paper.Point(dx, dy)));
+  return paths;
 }
 
 export function drawWindowLine(
