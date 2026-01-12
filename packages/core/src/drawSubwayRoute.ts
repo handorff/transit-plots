@@ -6,6 +6,7 @@ import {
   drawFixedHeightTextLines,
   splitDescription,
   drawFullLines,
+  type EncodedPolylineCollection,
 } from "./renderHelpers.js";
 
 import type { SubwayRouteParams } from "./params.js";
@@ -123,7 +124,11 @@ export function drawSubwayRoute({
     return height;
   }
 
-  function drawLine(encodedPolylines: any, descriptionHeight: number, color: string) {
+  function drawLine(
+    encodedPolylines: EncodedPolylineCollection,
+    descriptionHeight: number,
+    color: string
+  ) {
     const pillAndDescriptionHeight = Math.max(PILL_HEIGHT, descriptionHeight);
     const MAP_Y = TOP_BOTTOM_MARGIN + pillAndDescriptionHeight + MAP_TOP_MARGIN;
     const MAP_HEIGHT = HEIGHT - (2 * TOP_BOTTOM_MARGIN + pillAndDescriptionHeight + MAP_TOP_MARGIN);
