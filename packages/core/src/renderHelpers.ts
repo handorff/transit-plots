@@ -1,6 +1,7 @@
 import paper from "paper";
 import polyline from "@mapbox/polyline";
 import { PaperOffset } from "paperjs-offset";
+import type { Font, Path } from "opentype.js";
 
 export function drawOutline(width: number, height: number, bindingWidth: number | undefined) {
   const border = new paper.Path.Rectangle({
@@ -28,7 +29,7 @@ type Position = { x: number; y: number };
 type PillSize = { height: number; width: number };
 type TextSize = { maxHeight: number; maxWidth?: number };
 type StyleOpts = {
-  font: any;
+  font: Font;
   fillStyle: string;
   hatchSpacing: number;
   color?: string;
@@ -60,7 +61,7 @@ export function drawFixedSizePill(
     strokeWidth: 1,
   });
 
-  const opentypeTextPath = font.getPath(TEXT);
+  const opentypeTextPath: Path = font.getPath(TEXT);
   const textPath = createTextPath(opentypeTextPath.toPathData());
   textPath.strokeWidth = 1;
   textPath.strokeColor = COLOR;
@@ -119,7 +120,26 @@ export function drawFixedSizePill(
   fillArea.remove();
 }
 
-export function drawVariableWidthPill(position: Position, text: string, size: any, styleOpts: any) {
+type VariablePillSize = {
+  pillHeight: number;
+  textHeight: number;
+  margin: number;
+  minWidth?: number;
+};
+
+type VariableStyleOpts = {
+  font: Font;
+  fillStyle: string;
+  hatchSpacing: number;
+  color?: string;
+};
+
+export function drawVariableWidthPill(
+  position: Position,
+  text: string,
+  size: VariablePillSize,
+  styleOpts: VariableStyleOpts
+) {
   const TEXT = text;
   const { x: PILL_X, y: PILL_Y } = position;
   const {
@@ -136,7 +156,7 @@ export function drawVariableWidthPill(position: Position, text: string, size: an
   const COLOR = color === undefined ? new paper.Color("#000000") : new paper.Color("#" + color);
 
   // Draw text and scale to TEXT_HEIGHT
-  const opentypeTextPath = font.getPath(TEXT);
+  const opentypeTextPath: Path = font.getPath(TEXT);
   const textPath = createTextPath(opentypeTextPath.toPathData());
   textPath.strokeWidth = 1;
   textPath.strokeColor = COLOR;
@@ -227,7 +247,7 @@ type TextSize2 = {
 };
 
 type StyleOpts2 = {
-  font: any;
+  font: Font;
   isFilled: boolean;
   hatchSpacing: number;
   color?: string;
@@ -251,7 +271,7 @@ export function drawFixedHeightTextLines(
 
   // Create raw text paths
   const rawTextPaths = lines.map((line) => {
-    const opentypeTextPath = FONT.getPath(line);
+    const opentypeTextPath: Path = FONT.getPath(line);
     const textPath = createTextPath(opentypeTextPath.toPathData());
     textPath.strokeWidth = 1;
     textPath.strokeColor = COLOR;
