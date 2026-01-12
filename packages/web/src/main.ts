@@ -128,7 +128,8 @@ let renderToken = 0;
 let renderTimer: number | undefined;
 const busPosterAreas = [
   // TODO: replace with municipalities/neighborhoods.
-  { id: "placeholder", label: "Placeholder Area" },
+  { type: "municipality", name: "Placeholder Municipality" },
+  { type: "neighborhood", name: "Placeholder Neighborhood" },
 ];
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
@@ -324,16 +325,34 @@ function renderParamFields(type: string) {
   }
 
   if (resolved === "bus-poster") {
-    const selectedAreaId = readString("areaId") ?? busPosterAreas[0]?.id ?? "";
+    const selectedAreaType =
+      readString("areaType") ?? busPosterAreas[0]?.type ?? "municipality";
+    const matchingAreas = busPosterAreas.filter((area) => area.type === selectedAreaType);
+    const fallbackAreaName = matchingAreas[0]?.name ?? "";
+    const selectedAreaName = readString("areaName") ?? fallbackAreaName;
+    const resolvedAreaName = matchingAreas.some((area) => area.name === selectedAreaName)
+      ? selectedAreaName
+      : fallbackAreaName;
     els.paramFields.innerHTML = `
       <div class="section-title">Parameters</div>
       <div class="field">
-        <label for="areaId">Municipality or neighborhood</label>
-        <select id="areaId">
-          ${busPosterAreas
+        <label for="areaType">Area type</label>
+        <select id="areaType">
+          ${["municipality", "neighborhood"]
+            .map(
+              (type) =>
+                `<option value="${type}" ${type === selectedAreaType ? "selected" : ""}>${type}</option>`
+            )
+            .join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label for="areaName">Area name</label>
+        <select id="areaName">
+          ${matchingAreas
             .map(
               (area) =>
-                `<option value="${area.id}" ${area.id === selectedAreaId ? "selected" : ""}>${area.label}</option>`
+                `<option value="${area.name}" ${area.name === resolvedAreaName ? "selected" : ""}>${area.name}</option>`
             )
             .join("")}
         </select>
@@ -498,7 +517,7 @@ async function doRender() {
       }
     }
     if (renderType === "bus-poster") {
-      if (!readString("areaId")) {
+      if (!readString("areaType") || !readString("areaName")) {
         els.status.textContent = "Select a municipality or neighborhood.";
         return;
       }
@@ -514,7 +533,8 @@ async function doRender() {
       routeId: readString("routeId") || fallbackRouteId,
       stopId: readString("stopId"),
       directionId: readNumber("directionId"),
-      areaId: readString("areaId"),
+      areaType: readString("areaType"),
+      areaName: readString("areaName"),
       format: readString("format"),
     });
 
@@ -532,7 +552,10 @@ async function doRender() {
       mbtaData = await client.fetchStationData((params as StationParams).stopId);
     }
     if (renderType === "bus-poster") {
-      mbtaData = await client.fetchBusPosterData((params as BusPosterParams).areaId);
+      mbtaData = await client.fetchBusPosterData(
+        (params as BusPosterParams).areaType,
+        (params as BusPosterParams).areaName
+      );
     }
 
     els.status.textContent = "Rendering…";

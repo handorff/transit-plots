@@ -35,7 +35,8 @@ const cli = yargs(hideBin(process.argv))
   .option("routeId", { type: "string" })
   .option("stopId", { type: "string" })
   .option("directionId", { type: "number" })
-  .option("areaId", { type: "string" })
+  .option("areaType", { type: "string", choices: ["municipality", "neighborhood"] })
+  .option("areaName", { type: "string" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
@@ -59,8 +60,11 @@ const cli = yargs(hideBin(process.argv))
       }
     }
     if (argv.type === "bus-poster") {
-      if (!argv.areaId) {
-        throw new Error("areaId is required when type is bus-poster");
+      if (!argv.areaType) {
+        throw new Error("areaType is required when type is bus-poster");
+      }
+      if (!argv.areaName) {
+        throw new Error("areaName is required when type is bus-poster");
       }
     }
     return true;
@@ -75,7 +79,8 @@ const params = coerceParams(renderType, {
   routeId: argv.routeId,
   stopId: argv.stopId,
   directionId: argv.directionId,
-  areaId: argv.areaId,
+  areaType: argv.areaType,
+  areaName: argv.areaName,
   format: argv.format,
 });
 
@@ -96,7 +101,10 @@ if (renderType === "station") {
   mbtaData = await client.fetchStationData((params as StationParams).stopId);
 }
 if (renderType === "bus-poster") {
-  mbtaData = await client.fetchBusPosterData((params as BusPosterParams).areaId);
+  mbtaData = await client.fetchBusPosterData(
+    (params as BusPosterParams).areaType,
+    (params as BusPosterParams).areaName
+  );
 }
 
 const fonts = {

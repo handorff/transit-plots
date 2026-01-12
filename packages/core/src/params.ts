@@ -19,7 +19,8 @@ export type StationParams = BaseParams & {
 };
 
 export type BusPosterParams = BaseParams & {
-  areaId: string;
+  areaType: "municipality" | "neighborhood";
+  areaName: string;
 };
 
 export type RenderParamsByType = {
@@ -56,7 +57,8 @@ export const DEFAULT_STATION_PARAMS: StationParams = {
 
 export const DEFAULT_BUS_POSTER_PARAMS: BusPosterParams = {
   ...DEFAULT_BASE_PARAMS,
-  areaId: "placeholder",
+  areaType: "municipality",
+  areaName: "Placeholder Municipality",
 };
 
 // very small validation/coercion helper
@@ -84,7 +86,9 @@ export function coerceParams(
     case "bus-poster":
       return {
         ...coerceBaseParams(partial),
-        areaId: String(partial.areaId ?? DEFAULT_BUS_POSTER_PARAMS.areaId),
+        areaType:
+          partial.areaType === "neighborhood" ? "neighborhood" : DEFAULT_BUS_POSTER_PARAMS.areaType,
+        areaName: String(partial.areaName ?? DEFAULT_BUS_POSTER_PARAMS.areaName),
       };
     default:
       return {

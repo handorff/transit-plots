@@ -85,8 +85,12 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { route, description, encodedPolylines };
   }
 
-  async function fetchBusPosterData(areaId: string): Promise<BusPosterResponse> {
-    void areaId;
+  async function fetchBusPosterData(
+    areaType: "municipality" | "neighborhood",
+    areaName: string
+  ): Promise<BusPosterResponse> {
+    void areaType;
+    void areaName;
     return {};
   }
 
