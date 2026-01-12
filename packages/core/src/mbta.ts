@@ -4,6 +4,7 @@ export type MbtaClientOptions = {
 };
 
 export type BusRouteResponse = any;
+export type BusPosterResponse = any;
 export type SubwayRouteResponse = any;
 export type StationResponse = any;
 export type StationListItem = { id: string; name: string };
@@ -82,6 +83,11 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     const encodedPolylines = routePatterns.map(getShapePolyline);
 
     return { route, description, encodedPolylines };
+  }
+
+  async function fetchBusPosterData(areaId: string): Promise<BusPosterResponse> {
+    void areaId;
+    return {};
   }
 
   async function fetchSubwayRouteData(routeId: string): Promise<SubwayRouteResponse> {
@@ -347,6 +353,7 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
 
   return {
     fetchBusRouteData,
+    fetchBusPosterData,
     fetchSubwayRouteData,
     fetchStationData,
     fetchStations,

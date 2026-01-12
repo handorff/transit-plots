@@ -1,5 +1,6 @@
 import type {
   BusRouteParams,
+  BusPosterParams,
   OpenTypeFont,
   StationParams,
   SubwayRouteParams,
@@ -125,6 +126,10 @@ const els = {
 let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
+const busPosterAreas = [
+  // TODO: replace with municipalities/neighborhoods.
+  { id: "placeholder", label: "Placeholder Area" },
+];
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
@@ -318,6 +323,26 @@ function renderParamFields(type: string) {
     return;
   }
 
+  if (resolved === "bus-poster") {
+    const selectedAreaId = readString("areaId") ?? busPosterAreas[0]?.id ?? "";
+    els.paramFields.innerHTML = `
+      <div class="section-title">Parameters</div>
+      <div class="field">
+        <label for="areaId">Municipality or neighborhood</label>
+        <select id="areaId">
+          ${busPosterAreas
+            .map(
+              (area) =>
+                `<option value="${area.id}" ${area.id === selectedAreaId ? "selected" : ""}>${area.label}</option>`
+            )
+            .join("")}
+        </select>
+      </div>
+      ${commonFields}
+    `;
+    return;
+  }
+
   els.paramFields.innerHTML = `
     <div class="section-title">Parameters</div>
     ${commonFields}
@@ -472,6 +497,12 @@ async function doRender() {
         return;
       }
     }
+    if (renderType === "bus-poster") {
+      if (!readString("areaId")) {
+        els.status.textContent = "Select a municipality or neighborhood.";
+        return;
+      }
+    }
 
     const fallbackRouteId =
       renderType === "bus-route"
@@ -483,6 +514,7 @@ async function doRender() {
       routeId: readString("routeId") || fallbackRouteId,
       stopId: readString("stopId"),
       directionId: readNumber("directionId"),
+      areaId: readString("areaId"),
       format: readString("format"),
     });
 
@@ -498,6 +530,9 @@ async function doRender() {
     }
     if (renderType === "station") {
       mbtaData = await client.fetchStationData((params as StationParams).stopId);
+    }
+    if (renderType === "bus-poster") {
+      mbtaData = await client.fetchBusPosterData((params as BusPosterParams).areaId);
     }
 
     els.status.textContent = "Rendering…";

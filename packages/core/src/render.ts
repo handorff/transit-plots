@@ -1,6 +1,7 @@
 import paper from "paper";
 import type {
   BusRouteParams,
+  BusPosterParams,
   RenderParamsByType,
   RenderType,
   StationParams,
@@ -28,6 +29,20 @@ export type RenderInput = {
   type: RenderType;
 };
 
+export function drawBusPoster({
+  params,
+  mbtaData,
+  resources,
+}: {
+  params: BusPosterParams;
+  mbtaData: any;
+  resources: RenderResources;
+}) {
+  void params;
+  void mbtaData;
+  void resources;
+}
+
 // Browser-friendly rendering: caller provides a canvas OR we create one.
 // For CLI (Node), we’ll use paper-jsdom in the CLI package and still call this.
 export function renderSvg({ params, mbtaData, resources, type }: RenderInput): string {
@@ -53,6 +68,9 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
       break;
     case "station":
       drawStation({ params: params as StationParams, mbtaData, resources });
+      break;
+    case "bus-poster":
+      drawBusPoster({ params: params as BusPosterParams, mbtaData, resources });
       break;
     default:
       drawBusRoute({ params: params as BusRouteParams, mbtaData, resources });
