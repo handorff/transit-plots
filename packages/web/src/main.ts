@@ -72,6 +72,11 @@ app.innerHTML = `
       border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     }
+    .helper {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
     .status {
       margin: 0;
       color: #4b5563;
@@ -132,6 +137,12 @@ const subwayRouteIdsState = {
   lastSelected: "Red",
   pending: undefined as Promise<void> | undefined,
 };
+const stationsState = {
+  status: "idle" as "idle" | "loading" | "loaded" | "error",
+  data: [] as { id: string; name: string }[],
+  lastSelected: "place-davis",
+  pending: undefined as Promise<void> | undefined,
+};
 
 function scheduleRender() {
   if (renderTimer) {
@@ -178,6 +189,46 @@ function buildRouteIdOptions(state: typeof busRouteIdsState, selectedRouteId: st
     options: `<option value="" selected>Loading routes…</option>`,
     disabled: true,
     selected: selectedRouteId,
+  };
+}
+
+function resolveStationSelection(state: typeof stationsState) {
+  const current = readString("stopId");
+  return current ?? state.lastSelected;
+}
+
+function buildStationOptions(state: typeof stationsState, selectedStopId: string) {
+  if (state.status === "loaded" && state.data.length > 0) {
+    const resolvedSelection =
+      state.data.find((station) => station.id === selectedStopId) ?? state.data[0];
+    const options = state.data
+      .map(
+        (station) =>
+          `<option value="${station.name}" data-id="${station.id}" label="${station.name} (${station.id})"></option>`
+      )
+      .join("");
+    return {
+      options,
+      disabled: false,
+      selectedId: resolvedSelection?.id ?? selectedStopId,
+      selectedName: resolvedSelection?.name ?? selectedStopId,
+    };
+  }
+
+  if (state.status === "error") {
+    return {
+      options: "",
+      disabled: true,
+      selectedId: selectedStopId,
+      selectedName: "Unable to load stations",
+    };
+  }
+
+  return {
+    options: "",
+    disabled: true,
+    selectedId: selectedStopId,
+    selectedName: "Loading stations…",
   };
 }
 
@@ -241,11 +292,26 @@ function renderParamFields(type: string) {
   }
 
   if (resolved === "station") {
+    if (stationsState.status === "idle") {
+      void ensureStations();
+    }
+    const selection = resolveStationSelection(stationsState);
+    const stationOptions = buildStationOptions(stationsState, selection);
+    stationsState.lastSelected = stationOptions.selectedId;
     els.paramFields.innerHTML = `
       <div class="section-title">Parameters</div>
       <div class="field">
-        <label for="stopId">Stop ID</label>
-        <input id="stopId" value="place-davis" />
+        <label for="stationSearch">Station</label>
+        <input
+          id="stationSearch"
+          list="stationOptions"
+          value="${stationOptions.selectedName}"
+          placeholder="Search for a station"
+          ${stationOptions.disabled ? "disabled" : ""}
+        />
+        <datalist id="stationOptions">${stationOptions.options}</datalist>
+        <input id="stopId" type="hidden" value="${stationOptions.selectedId}" />
+        <p class="helper">Stop ID: <span id="stopIdLabel">${stationOptions.selectedId}</span></p>
       </div>
       ${commonFields}
     `;
@@ -266,6 +332,21 @@ function readNumber(id: string) {
 function readString(id: string) {
   const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
   return input ? input.value : undefined;
+}
+
+function updateStationSelection(value: string) {
+  const datalist = document.querySelector<HTMLDataListElement>("#stationOptions");
+  const stopIdInput = document.querySelector<HTMLInputElement>("#stopId");
+  const stopIdLabel = document.querySelector<HTMLSpanElement>("#stopIdLabel");
+  if (!datalist || !stopIdInput) return;
+
+  const option = Array.from(datalist.options).find((item) => item.value === value);
+  const stopId = option?.dataset.id;
+  if (!stopId) return;
+
+  stopIdInput.value = stopId;
+  stationsState.lastSelected = stopId;
+  if (stopIdLabel) stopIdLabel.textContent = stopId;
 }
 
 async function ensureBusRouteIds() {
@@ -314,6 +395,30 @@ async function ensureSubwayRouteIds() {
     renderParamFields(els.renderType.value);
   })();
   await subwayRouteIdsState.pending;
+}
+
+async function ensureStations() {
+  if (stationsState.status === "loaded") return;
+  if (stationsState.status === "loading") {
+    await stationsState.pending;
+    return;
+  }
+  stationsState.status = "loading";
+  renderParamFields(els.renderType.value);
+  stationsState.pending = (async () => {
+    try {
+      const client = makeMbtaClient();
+      stationsState.data = await client.fetchStations();
+      stationsState.status = "loaded";
+    } catch (error) {
+      stationsState.status = "error";
+      console.error("Failed to load MBTA stations", error);
+    } finally {
+      stationsState.pending = undefined;
+    }
+    renderParamFields(els.renderType.value);
+  })();
+  await stationsState.pending;
 }
 
 async function ensureFonts() {
@@ -415,17 +520,33 @@ els.renderType.addEventListener("change", () => {
   renderParamFields(els.renderType.value);
   scheduleRender();
 });
-els.paramFields.addEventListener("input", () => scheduleRender());
-els.paramFields.addEventListener("change", () => scheduleRender());
+els.paramFields.addEventListener("input", (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target instanceof HTMLInputElement && target.id === "stationSearch") {
+    updateStationSelection(target.value);
+  }
+  scheduleRender();
+});
+els.paramFields.addEventListener("change", (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target instanceof HTMLInputElement && target.id === "stationSearch") {
+    updateStationSelection(target.value);
+  }
+  scheduleRender();
+});
 els.apiKey.addEventListener("input", () => scheduleRender());
 els.apiKey.addEventListener("change", () => {
   busRouteIdsState.status = "idle";
   subwayRouteIdsState.status = "idle";
+  stationsState.status = "idle";
   if (els.renderType.value === "bus-route") {
     void ensureBusRouteIds();
   }
   if (els.renderType.value === "subway-route") {
     void ensureSubwayRouteIds();
+  }
+  if (els.renderType.value === "station") {
+    void ensureStations();
   }
   scheduleRender();
 });

@@ -6,6 +6,7 @@ export type MbtaClientOptions = {
 export type BusRouteResponse = any;
 export type SubwayRouteResponse = any;
 export type StationResponse = any;
+export type StationListItem = { id: string; name: string };
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
   const baseUrl = opts.baseUrl ?? "https://api-v3.mbta.com";
@@ -330,10 +331,27 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return routes.map(({ id, shortName }) => ({ id, shortName }));
   }
 
+  async function fetchStations(): Promise<StationListItem[]> {
+    const json = await getJson("/stops", {
+      "filter[location_type]": "1",
+      "page[limit]": "10000",
+    });
+
+    const data = Array.isArray(json?.data) ? json.data : [];
+    return data
+      .map((stop: any) => ({
+        id: String(stop?.id ?? ""),
+        name: String(stop?.attributes?.name ?? stop?.id ?? ""),
+      }))
+      .filter((stop: StationListItem) => stop.id.length > 0 && stop.name.length > 0)
+      .sort((a: StationListItem, b: StationListItem) => a.name.localeCompare(b.name));
+  }
+
   return {
     fetchBusRouteData,
     fetchSubwayRouteData,
     fetchStationData,
+    fetchStations,
     fetchRouteIds,
     fetchSubwayRouteIds,
   };
