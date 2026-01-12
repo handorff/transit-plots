@@ -338,15 +338,20 @@ function updateStationSelection(value: string) {
   const datalist = document.querySelector<HTMLDataListElement>("#stationOptions");
   const stopIdInput = document.querySelector<HTMLInputElement>("#stopId");
   const stopIdLabel = document.querySelector<HTMLSpanElement>("#stopIdLabel");
-  if (!datalist || !stopIdInput) return;
+  if (!datalist || !stopIdInput) return false;
 
   const option = Array.from(datalist.options).find((item) => item.value === value);
   const stopId = option?.dataset.id;
-  if (!stopId) return;
+  if (!stopId) {
+    stopIdInput.value = "";
+    if (stopIdLabel) stopIdLabel.textContent = "Select a station";
+    return false;
+  }
 
   stopIdInput.value = stopId;
   stationsState.lastSelected = stopId;
   if (stopIdLabel) stopIdLabel.textContent = stopId;
+  return true;
 }
 
 async function ensureBusRouteIds() {
@@ -455,6 +460,18 @@ async function doRender() {
         return;
       }
     }
+    if (renderType === "station") {
+      await ensureStations();
+      if (stationsState.status !== "loaded") {
+        els.status.textContent =
+          stationsState.status === "error" ? "Failed to load stations." : "Loading stations…";
+        return;
+      }
+      if (!readString("stopId")) {
+        els.status.textContent = "Select a station.";
+        return;
+      }
+    }
 
     const fallbackRouteId =
       renderType === "bus-route"
@@ -523,14 +540,18 @@ els.renderType.addEventListener("change", () => {
 els.paramFields.addEventListener("input", (event) => {
   const target = event.target as HTMLElement | null;
   if (target instanceof HTMLInputElement && target.id === "stationSearch") {
-    updateStationSelection(target.value);
+    const selected = updateStationSelection(target.value);
+    if (selected) scheduleRender();
+    return;
   }
   scheduleRender();
 });
 els.paramFields.addEventListener("change", (event) => {
   const target = event.target as HTMLElement | null;
   if (target instanceof HTMLInputElement && target.id === "stationSearch") {
-    updateStationSelection(target.value);
+    const selected = updateStationSelection(target.value);
+    if (selected) scheduleRender();
+    return;
   }
   scheduleRender();
 });
