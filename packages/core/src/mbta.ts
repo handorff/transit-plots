@@ -269,7 +269,7 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   }
 
   async function fetchRouteIds(): Promise<{ id: string; shortName: string }[]> {
-    const json = await getJson("/routes", { "page[limit]": "1000", sort: "sort_order" });
+    const json = await getJson("/routes", { sort: "sort_order" });
     const data = Array.isArray(json?.data) ? json.data : [];
     const routes: { id: string; shortName: string; sortOrder: number }[] = data
       .filter((route: any) => route?.attributes?.type === 3)
@@ -293,7 +293,6 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
 
   async function fetchSubwayRouteIds(): Promise<{ id: string; shortName: string }[]> {
     const json = await getJson("/routes", {
-      "page[limit]": "1000",
       sort: "sort_order",
       "filter[type]": "0,1",
     });
@@ -334,7 +333,6 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
   async function fetchStations(): Promise<StationListItem[]> {
     const json = await getJson("/stops", {
       "filter[location_type]": "1",
-      "page[limit]": "10000",
     });
 
     const data = Array.isArray(json?.data) ? json.data : [];
