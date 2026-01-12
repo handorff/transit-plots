@@ -1,6 +1,7 @@
 import paper from "paper";
 import polyline from "@mapbox/polyline";
 import { PaperOffset } from "paperjs-offset";
+import type { Font } from "opentype.js";
 
 export function drawOutline(width: number, height: number, bindingWidth: number | undefined) {
   const border = new paper.Path.Rectangle({
@@ -27,8 +28,14 @@ export function drawOutline(width: number, height: number, bindingWidth: number 
 type Position = { x: number; y: number };
 type PillSize = { height: number; width: number };
 type TextSize = { maxHeight: number; maxWidth?: number };
+type PillVariableSize = {
+  pillHeight: number;
+  textHeight: number;
+  margin: number;
+  minWidth?: number;
+};
 type StyleOpts = {
-  font: any;
+  font: Font;
   fillStyle: string;
   hatchSpacing: number;
   color?: string;
@@ -119,7 +126,12 @@ export function drawFixedSizePill(
   fillArea.remove();
 }
 
-export function drawVariableWidthPill(position: Position, text: string, size: any, styleOpts: any) {
+export function drawVariableWidthPill(
+  position: Position,
+  text: string,
+  size: PillVariableSize,
+  styleOpts: StyleOpts
+) {
   const TEXT = text;
   const { x: PILL_X, y: PILL_Y } = position;
   const {
@@ -190,20 +202,19 @@ export function drawVariableWidthPill(position: Position, text: string, size: an
   return [outline, textPath, ...hatchLines];
 }
 
-// TODO fix types in this function
-function createTextPath(pathData: any) {
+function createTextPath(pathData: string): paper.PathItem {
   // p1 is inside p2
-  const isInside = (p1: any, p2: any) => {
+  const isInside = (p1: paper.Path, p2: paper.PathItem) => {
     // This is a really dumb hack to fix the character 'A', it might break something else
     if (p1.segments.length == 4) {
       return false;
     }
 
-    return p1.segments.every((s: any) => p2.contains(s.point));
+    return p1.segments.every((s) => p2.contains(s.point));
   };
 
   let textPath: paper.PathItem = new paper.Path([]);
-  pathData.split("Z").forEach((p: any) => {
+  pathData.split("Z").forEach((p) => {
     const newPath = new paper.Path(p + "Z");
     let newTextPath;
 
@@ -227,7 +238,7 @@ type TextSize2 = {
 };
 
 type StyleOpts2 = {
-  font: any;
+  font: Font;
   isFilled: boolean;
   hatchSpacing: number;
   color?: string;
@@ -351,7 +362,7 @@ type StyleOpts3 = {
 
 // Draw multiple whole lines and fit to the same size window
 export function drawFullLines(
-  encodedPolylines: any[],
+  encodedPolylines: string[],
   position: Position,
   mapSize: MapSize,
   styleOpts: StyleOpts3
@@ -387,32 +398,36 @@ export function drawFullLines(
 
   if (OFFSET === null) {
     return mapPaths;
-  } else {
-    const allPaths: any[] = [];
-    mapPaths.forEach((mapPath: any) => {
-      const p1 = PaperOffset.offset(mapPath, OFFSET);
-      const p2 = PaperOffset.offset(mapPath, -OFFSET);
-      allPaths.push(mapPath, p1, p2);
-    });
-    return allPaths;
   }
+
+  const allPaths: paper.PathItem[] = [];
+  mapPaths.forEach((mapPath) => {
+    const p1 = PaperOffset.offset(mapPath, OFFSET);
+    const p2 = PaperOffset.offset(mapPath, -OFFSET);
+    allPaths.push(mapPath, p1, p2);
+  });
+  return allPaths;
 }
 
-function centerPaths(paths: any, position: any, size: any) {
+function centerPaths(
+  paths: paper.PathItem[],
+  position: paper.PointLike,
+  size: paper.SizeLike
+): paper.PathItem[] {
   const [x, y] = position;
   const [w, h] = size;
 
-  const allBounds = paths.map((p: any) => ({
+  const allBounds = paths.map((p) => ({
     xMin: p.bounds.x,
     xMax: p.bounds.x + p.bounds.width,
     yMin: p.bounds.y,
     yMax: p.bounds.y + p.bounds.height,
   }));
 
-  const xMin = Math.min(...allBounds.map((b: any) => b.xMin));
-  const xMax = Math.max(...allBounds.map((b: any) => b.xMax));
-  const yMin = Math.min(...allBounds.map((b: any) => b.yMin));
-  const yMax = Math.max(...allBounds.map((b: any) => b.yMax));
+  const xMin = Math.min(...allBounds.map((b) => b.xMin));
+  const xMax = Math.max(...allBounds.map((b) => b.xMax));
+  const yMin = Math.min(...allBounds.map((b) => b.yMin));
+  const yMax = Math.max(...allBounds.map((b) => b.yMax));
 
   const width = xMax - xMin;
   const height = yMax - yMin;
@@ -420,15 +435,21 @@ function centerPaths(paths: any, position: any, size: any) {
   const dx = x + (w - width) / 2 - xMin;
   const dy = y + (h - height) / 2 - yMin;
 
-  return paths.map((p: any) => p.translate(new paper.Point(dx, dy)));
+  return paths.map((p) => p.translate(new paper.Point(dx, dy)));
 }
 
+type WindowSize = {
+  lat: number;
+  long: number;
+  widthLong: number;
+};
+
 export function drawWindowLine(
-  encodedPolyline: any,
+  encodedPolyline: string,
   position: Position,
   mapSize: MapSize,
-  windowSize: any,
-  styleOpts: any
+  windowSize: WindowSize,
+  styleOpts: StyleOpts3
 ) {
   const { x: MAP_X, y: MAP_Y } = position;
   const { width: MAP_WIDTH, height: MAP_HEIGHT } = mapSize;
