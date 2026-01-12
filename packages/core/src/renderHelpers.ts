@@ -349,9 +349,11 @@ type StyleOpts3 = {
   offset: number | null;
 };
 
+export type EncodedPolylineCollection = string[];
+
 // Draw multiple whole lines and fit to the same size window
 export function drawFullLines(
-  encodedPolylines: any[],
+  encodedPolylines: EncodedPolylineCollection,
   position: Position,
   mapSize: MapSize,
   styleOpts: StyleOpts3
@@ -388,8 +390,8 @@ export function drawFullLines(
   if (OFFSET === null) {
     return mapPaths;
   } else {
-    const allPaths: any[] = [];
-    mapPaths.forEach((mapPath: any) => {
+    const allPaths: paper.PathItem[] = [];
+    mapPaths.forEach((mapPath) => {
       const p1 = PaperOffset.offset(mapPath, OFFSET);
       const p2 = PaperOffset.offset(mapPath, -OFFSET);
       allPaths.push(mapPath, p1, p2);
@@ -398,21 +400,25 @@ export function drawFullLines(
   }
 }
 
-function centerPaths(paths: any, position: any, size: any) {
+function centerPaths(
+  paths: paper.PathItem[],
+  position: [number, number],
+  size: [number, number]
+) {
   const [x, y] = position;
   const [w, h] = size;
 
-  const allBounds = paths.map((p: any) => ({
+  const allBounds = paths.map((p) => ({
     xMin: p.bounds.x,
     xMax: p.bounds.x + p.bounds.width,
     yMin: p.bounds.y,
     yMax: p.bounds.y + p.bounds.height,
   }));
 
-  const xMin = Math.min(...allBounds.map((b: any) => b.xMin));
-  const xMax = Math.max(...allBounds.map((b: any) => b.xMax));
-  const yMin = Math.min(...allBounds.map((b: any) => b.yMin));
-  const yMax = Math.max(...allBounds.map((b: any) => b.yMax));
+  const xMin = Math.min(...allBounds.map((b) => b.xMin));
+  const xMax = Math.max(...allBounds.map((b) => b.xMax));
+  const yMin = Math.min(...allBounds.map((b) => b.yMin));
+  const yMax = Math.max(...allBounds.map((b) => b.yMax));
 
   const width = xMax - xMin;
   const height = yMax - yMin;
@@ -420,7 +426,7 @@ function centerPaths(paths: any, position: any, size: any) {
   const dx = x + (w - width) / 2 - xMin;
   const dy = y + (h - height) / 2 - yMin;
 
-  return paths.map((p: any) => p.translate(new paper.Point(dx, dy)));
+  return paths.map((p) => p.translate(new paper.Point(dx, dy)));
 }
 
 export function drawWindowLine(
