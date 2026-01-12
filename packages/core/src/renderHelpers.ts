@@ -392,19 +392,19 @@ export function drawFullLines(
   } else {
     const allPaths: paper.PathItem[] = [];
     mapPaths.forEach((mapPath) => {
-      const p1 = PaperOffset.offset(mapPath, OFFSET);
-      const p2 = PaperOffset.offset(mapPath, -OFFSET);
-      allPaths.push(mapPath, p1, p2);
+      if (!isOffsettablePath(mapPath)) {
+        allPaths.push(mapPath);
+      } else {
+        const p1 = PaperOffset.offset(mapPath, OFFSET);
+        const p2 = PaperOffset.offset(mapPath, -OFFSET);
+        allPaths.push(mapPath, p1, p2);
+      }
     });
     return allPaths;
   }
 }
 
-function centerPaths(
-  paths: paper.PathItem[],
-  position: [number, number],
-  size: [number, number]
-) {
+function centerPaths(paths: paper.PathItem[], position: [number, number], size: [number, number]) {
   const [x, y] = position;
   const [w, h] = size;
 
