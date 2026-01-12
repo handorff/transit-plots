@@ -1,4 +1,9 @@
-import type { BusRouteParams, OpenTypeFont, SubwayRouteParams } from "@transit-plots/core";
+import type {
+  BusRouteParams,
+  OpenTypeFont,
+  StationParams,
+  SubwayRouteParams,
+} from "@transit-plots/core";
 import {
   RENDER_TYPES,
   coerceParams,
@@ -235,6 +240,18 @@ function renderParamFields(type: string) {
     return;
   }
 
+  if (resolved === "station") {
+    els.paramFields.innerHTML = `
+      <div class="section-title">Parameters</div>
+      <div class="field">
+        <label for="stopId">Stop ID</label>
+        <input id="stopId" value="place-sstat" />
+      </div>
+      ${commonFields}
+    `;
+    return;
+  }
+
   els.paramFields.innerHTML = `
     <div class="section-title">Parameters</div>
     ${commonFields}
@@ -337,9 +354,12 @@ async function doRender() {
     const fallbackRouteId =
       renderType === "bus-route"
         ? busRouteIdsState.data[0]?.id
-        : subwayRouteIdsState.data[0]?.id;
+        : renderType === "subway-route"
+          ? subwayRouteIdsState.data[0]?.id
+          : undefined;
     const params = coerceParams(renderType, {
       routeId: readString("routeId") || fallbackRouteId,
+      stopId: readString("stopId"),
       directionId: readNumber("directionId"),
       format: readString("format"),
     });
@@ -353,6 +373,9 @@ async function doRender() {
     }
     if (renderType === "subway-route") {
       mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
+    }
+    if (renderType === "station") {
+      mbtaData = await client.fetchStationData((params as StationParams).stopId);
     }
 
     els.status.textContent = "Rendering…";

@@ -1,4 +1,4 @@
-export const RENDER_TYPES = ["bus-route", "subway-route"] as const;
+export const RENDER_TYPES = ["bus-route", "subway-route", "station"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
@@ -14,9 +14,14 @@ export type SubwayRouteParams = BaseParams & {
   routeId: string;
 };
 
+export type StationParams = BaseParams & {
+  stopId: string;
+};
+
 export type RenderParamsByType = {
   "bus-route": BusRouteParams;
   "subway-route": SubwayRouteParams;
+  station: StationParams;
 };
 
 export type RenderParams = RenderParamsByType[RenderType];
@@ -26,6 +31,7 @@ export const DEFAULT_BASE_PARAMS: BaseParams = {
 };
 
 export const DEFAULT_ROUTE_ID = "1";
+export const DEFAULT_STOP_ID = "place-sstat";
 
 export const DEFAULT_BUS_ROUTE_PARAMS: BusRouteParams = {
   ...DEFAULT_BASE_PARAMS,
@@ -38,10 +44,15 @@ export const DEFAULT_SUBWAY_ROUTE_PARAMS: SubwayRouteParams = {
   routeId: "1",
 };
 
+export const DEFAULT_STATION_PARAMS: StationParams = {
+  ...DEFAULT_BASE_PARAMS,
+  stopId: DEFAULT_STOP_ID,
+};
+
 // very small validation/coercion helper
 export function coerceParams(
   type: RenderType,
-  partial: Partial<BusRouteParams & SubwayRouteParams & BaseParams>
+  partial: Partial<BusRouteParams & SubwayRouteParams & StationParams & BaseParams>
 ): RenderParamsByType[RenderType] {
   switch (type) {
     case "bus-route":
@@ -54,6 +65,11 @@ export function coerceParams(
       return {
         ...coerceBaseParams(partial),
         routeId: String(partial.routeId ?? DEFAULT_ROUTE_ID),
+      };
+    case "station":
+      return {
+        ...coerceBaseParams(partial),
+        stopId: String(partial.stopId ?? DEFAULT_STOP_ID),
       };
     default:
       return {

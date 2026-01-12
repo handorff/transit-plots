@@ -5,6 +5,7 @@ export type MbtaClientOptions = {
 
 export type BusRouteResponse = any;
 export type SubwayRouteResponse = any;
+export type StationResponse = any;
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
   const baseUrl = opts.baseUrl ?? "https://api-v3.mbta.com";
@@ -149,6 +150,10 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return { color, route, description, encodedPolylines };
   }
 
+  async function fetchStationData(stopId: string): Promise<StationResponse> {
+    throw new Error(`fetchStationData not implemented for stopId=${stopId}`);
+  }
+
   async function fetchRouteIds(): Promise<{ id: string; shortName: string }[]> {
     const json = await getJson("/routes", { "page[limit]": "1000", sort: "sort_order" });
     const data = Array.isArray(json?.data) ? json.data : [];
@@ -211,7 +216,13 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     return routes.map(({ id, shortName }) => ({ id, shortName }));
   }
 
-  return { fetchBusRouteData, fetchSubwayRouteData, fetchRouteIds, fetchSubwayRouteIds };
+  return {
+    fetchBusRouteData,
+    fetchSubwayRouteData,
+    fetchStationData,
+    fetchRouteIds,
+    fetchSubwayRouteIds,
+  };
 }
 
 function getPill(routeName: string): string | undefined {

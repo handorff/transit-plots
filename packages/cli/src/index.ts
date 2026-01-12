@@ -15,7 +15,7 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
-import type { BusRouteParams, SubwayRouteParams } from "@transit-plots/core";
+import type { BusRouteParams, StationParams, SubwayRouteParams } from "@transit-plots/core";
 
 const cli = yargs(hideBin(process.argv))
   .command("help", "Show help", () => {}, () => {
@@ -23,6 +23,7 @@ const cli = yargs(hideBin(process.argv))
     process.exit(0);
   })
   .option("routeId", { type: "string" })
+  .option("stopId", { type: "string" })
   .option("directionId", { type: "number" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
@@ -41,6 +42,11 @@ const cli = yargs(hideBin(process.argv))
         throw new Error("routeId is required when type is subway-route");
       }
     }
+    if (argv.type === "station") {
+      if (!argv.stopId) {
+        throw new Error("stopId is required when type is station");
+      }
+    }
     return true;
   })
   .showHelpOnFail(true)
@@ -51,6 +57,7 @@ const argv = await cli.parse();
 const renderType = coerceRenderType(argv.type as string);
 const params = coerceParams(renderType, {
   routeId: argv.routeId,
+  stopId: argv.stopId,
   directionId: argv.directionId,
   format: argv.format,
 });
@@ -67,6 +74,9 @@ if (renderType === "bus-route") {
 }
 if (renderType === "subway-route") {
   mbtaData = await client.fetchSubwayRouteData((params as SubwayRouteParams).routeId);
+}
+if (renderType === "station") {
+  mbtaData = await client.fetchStationData((params as StationParams).stopId);
 }
 
 const fonts = {
