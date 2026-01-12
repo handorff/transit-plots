@@ -1,4 +1,4 @@
-export const RENDER_TYPES = ["bus-route", "subway-route", "station"] as const;
+export const RENDER_TYPES = ["station", "bus-route", "subway-route"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
@@ -31,7 +31,7 @@ export const DEFAULT_BASE_PARAMS: BaseParams = {
 };
 
 export const DEFAULT_ROUTE_ID = "1";
-export const DEFAULT_STOP_ID = "place-sstat";
+export const DEFAULT_STOP_ID = "place-davis";
 
 export const DEFAULT_BUS_ROUTE_PARAMS: BusRouteParams = {
   ...DEFAULT_BASE_PARAMS,

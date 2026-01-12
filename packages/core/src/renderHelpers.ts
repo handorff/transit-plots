@@ -119,6 +119,77 @@ export function drawFixedSizePill(
   fillArea.remove();
 }
 
+export function drawVariableWidthPill(position: Position, text: string, size: any, styleOpts: any) {
+  const TEXT = text;
+  const { x: PILL_X, y: PILL_Y } = position;
+  const {
+    pillHeight: PILL_HEIGHT,
+    textHeight: TEXT_HEIGHT,
+    margin: MARGIN,
+    minWidth: minWidth,
+  } = size;
+  const { font: font, fillStyle: fillStyle, hatchSpacing: hatchSpacing, color: color } = styleOpts;
+
+  const MIN_WIDTH = minWidth || 0;
+  const FILL_STYLE = fillStyle || "NONE";
+  const HATCH_SPACING = hatchSpacing || 1.5;
+  const COLOR = color === undefined ? new paper.Color("#000000") : new paper.Color("#" + color);
+
+  // Draw text and scale to TEXT_HEIGHT
+  const opentypeTextPath = font.getPath(TEXT);
+  const textPath = createTextPath(opentypeTextPath.toPathData());
+  textPath.strokeWidth = 1;
+  textPath.strokeColor = COLOR;
+
+  // Scale and position text
+  const scaleFactor = TEXT_HEIGHT / textPath.bounds.height;
+  textPath.scale(scaleFactor);
+
+  const PILL_WIDTH = Math.max(textPath.bounds.width + MARGIN * 2, MIN_WIDTH);
+  const textX = PILL_X + (PILL_WIDTH - textPath.bounds.width) / 2;
+  const textY = PILL_Y + (PILL_HEIGHT - textPath.bounds.height) / 2;
+  textPath.translate(new paper.Point(textX - textPath.bounds.x, textY - textPath.bounds.y));
+
+  const outline = new paper.Path.Rectangle({
+    point: [PILL_X, PILL_Y],
+    size: [PILL_WIDTH, PILL_HEIGHT],
+    radius: PILL_HEIGHT / 2,
+    strokeColor: COLOR,
+    strokeWidth: 1,
+  });
+
+  // Hatch fill
+  if (FILL_STYLE === "NONE") {
+    return [outline, textPath];
+  }
+
+  let fillArea;
+  if (FILL_STYLE === "INSIDE") {
+    fillArea = textPath.clone();
+  } else if (FILL_STYLE === "OUTSIDE") {
+    fillArea = outline.subtract(textPath);
+  } else {
+    fillArea = textPath.clone();
+  }
+
+  const n = (PILL_HEIGHT + PILL_WIDTH) / HATCH_SPACING;
+  const hatchLines = Array.from({ length: n }, (_, i) => {
+    const line = new paper.Path.Line({
+      from: [PILL_X + i * HATCH_SPACING - PILL_HEIGHT, PILL_Y],
+      to: [PILL_X + i * HATCH_SPACING, PILL_Y + PILL_HEIGHT],
+      strokeColor: COLOR,
+      stokeWidth: 1,
+    });
+
+    const hatchLine = line.intersect(fillArea, { trace: false });
+    line.remove();
+    return hatchLine;
+  }).filter((p) => !p.isEmpty(true));
+
+  fillArea.remove();
+  return [outline, textPath, ...hatchLines];
+}
+
 // TODO fix types in this function
 function createTextPath(pathData: any) {
   // p1 is inside p2
@@ -350,4 +421,62 @@ function centerPaths(paths: any, position: any, size: any) {
   const dy = y + (h - height) / 2 - yMin;
 
   return paths.map((p: any) => p.translate(new paper.Point(dx, dy)));
+}
+
+export function drawWindowLine(
+  encodedPolyline: any,
+  position: Position,
+  mapSize: MapSize,
+  windowSize: any,
+  styleOpts: any
+) {
+  const { x: MAP_X, y: MAP_Y } = position;
+  const { width: MAP_WIDTH, height: MAP_HEIGHT } = mapSize;
+  const { lat: CENTER_LAT, long: CENTER_LONG, widthLong: WIDTH_LONG } = windowSize;
+  const { color, offset: OFFSET } = styleOpts;
+
+  const COLOR = color === undefined ? new paper.Color("#000000") : new paper.Color("#" + color);
+
+  // Convert polyline to path
+  const geojson = polyline.toGeoJSON(encodedPolyline);
+  const pathData = "M" + geojson.coordinates.map(([pLong, pLat]) => `${pLong},${-pLat}`).join("L");
+
+  const rawPath = new paper.Path(pathData);
+  rawPath.strokeColor = new paper.Color(`#${color}`);
+  rawPath.strokeWidth = 1;
+
+  // Intersect with window
+  const HEIGHT_LAT = WIDTH_LONG * (MAP_HEIGHT / MAP_WIDTH);
+  const minLat = CENTER_LAT + HEIGHT_LAT / 2;
+  const minLong = CENTER_LONG - WIDTH_LONG / 2;
+
+  const window = new paper.Path.Rectangle({
+    point: [minLong, -minLat],
+    size: [WIDTH_LONG, HEIGHT_LAT],
+  });
+
+  const intersection = rawPath.intersect(window, { trace: false });
+  rawPath.remove();
+  window.remove();
+
+  // Scale to given size
+  const scaleFactor = MAP_WIDTH / WIDTH_LONG;
+  intersection.scale(scaleFactor, new paper.Point(CENTER_LONG, -CENTER_LAT));
+
+  // Move lat/long center to map center
+  const centerX = MAP_X + MAP_WIDTH / 2;
+  const centerY = MAP_Y + MAP_HEIGHT / 2;
+  intersection.translate(new paper.Point(centerX - CENTER_LONG, centerY + CENTER_LAT));
+
+  if (OFFSET === null || !isOffsettablePath(intersection)) {
+    return [intersection];
+  } else {
+    const p1 = PaperOffset.offset(intersection, OFFSET);
+    const p2 = PaperOffset.offset(intersection, -OFFSET);
+    return [intersection, p1, p2];
+  }
+}
+
+function isOffsettablePath(item: paper.PathItem): item is paper.Path | paper.CompoundPath {
+  return item instanceof paper.Path || item instanceof paper.CompoundPath;
 }

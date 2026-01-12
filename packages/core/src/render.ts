@@ -10,6 +10,8 @@ import { coerceRenderType, resolveFormatSize } from "./params.js";
 
 import { drawBusRoute } from "./drawBusRoute.js";
 import { drawSubwayRoute } from "./drawSubwayRoute.js";
+import { drawStation } from "./drawStation.js";
+
 import type { OpenTypeFont } from "./fonts.js";
 
 export type RenderResources = {
@@ -61,12 +63,4 @@ export function renderSvg({ params, mbtaData, resources, type }: RenderInput): s
   const svgNode = paper.project.exportSVG({ asString: true });
   paper.project.clear();
   return String(svgNode);
-}
-
-function drawStation(_input: {
-  params: StationParams;
-  mbtaData: unknown;
-  resources: RenderResources;
-}) {
-  // TODO: Implement station rendering.
 }

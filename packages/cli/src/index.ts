@@ -18,10 +18,15 @@ import { loadInterBold, loadInterRegular } from "./loadFont.js";
 import type { BusRouteParams, StationParams, SubwayRouteParams } from "@transit-plots/core";
 
 const cli = yargs(hideBin(process.argv))
-  .command("help", "Show help", () => {}, () => {
-    cli.showHelp();
-    process.exit(0);
-  })
+  .command(
+    "help",
+    "Show help",
+    () => {},
+    () => {
+      cli.showHelp();
+      process.exit(0);
+    }
+  )
   .option("routeId", { type: "string" })
   .option("stopId", { type: "string" })
   .option("directionId", { type: "number" })

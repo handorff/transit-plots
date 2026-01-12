@@ -245,7 +245,7 @@ function renderParamFields(type: string) {
       <div class="section-title">Parameters</div>
       <div class="field">
         <label for="stopId">Stop ID</label>
-        <input id="stopId" value="place-sstat" />
+        <input id="stopId" value="place-davis" />
       </div>
       ${commonFields}
     `;

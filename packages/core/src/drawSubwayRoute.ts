@@ -145,7 +145,7 @@ export function drawSubwayRoute({
     });
   }
 
-  drawOutline(FORMAT.width, FORMAT.height, FORMAT.bindingWidth);
+  drawOutline(WIDTH, HEIGHT, BINDING_WIDTH);
   drawPillFilled(mbtaData.route, mbtaData.color);
   const descriptionHeight = drawDescriptionAndReturnHeight(mbtaData.description);
   drawLine(mbtaData.encodedPolylines, descriptionHeight, mbtaData.color);
