@@ -15,7 +15,12 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont.js";
-import type { BusRouteParams, StationParams, SubwayRouteParams } from "@transit-plots/core";
+import type {
+  BusPosterParams,
+  BusRouteParams,
+  StationParams,
+  SubwayRouteParams,
+} from "@transit-plots/core";
 
 const cli = yargs(hideBin(process.argv))
   .command(
@@ -30,6 +35,8 @@ const cli = yargs(hideBin(process.argv))
   .option("routeId", { type: "string" })
   .option("stopId", { type: "string" })
   .option("directionId", { type: "number" })
+  .option("areaType", { type: "string", choices: ["municipality", "neighborhood"] })
+  .option("areaName", { type: "string" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
@@ -52,6 +59,14 @@ const cli = yargs(hideBin(process.argv))
         throw new Error("stopId is required when type is station");
       }
     }
+    if (argv.type === "bus-poster") {
+      if (!argv.areaType) {
+        throw new Error("areaType is required when type is bus-poster");
+      }
+      if (!argv.areaName) {
+        throw new Error("areaName is required when type is bus-poster");
+      }
+    }
     return true;
   })
   .showHelpOnFail(true)
@@ -64,6 +79,8 @@ const params = coerceParams(renderType, {
   routeId: argv.routeId,
   stopId: argv.stopId,
   directionId: argv.directionId,
+  areaType: argv.areaType,
+  areaName: argv.areaName,
   format: argv.format,
 });
 
@@ -82,6 +99,12 @@ if (renderType === "subway-route") {
 }
 if (renderType === "station") {
   mbtaData = await client.fetchStationData((params as StationParams).stopId);
+}
+if (renderType === "bus-poster") {
+  mbtaData = await client.fetchBusPosterData(
+    (params as BusPosterParams).areaType,
+    (params as BusPosterParams).areaName
+  );
 }
 
 const fonts = {
