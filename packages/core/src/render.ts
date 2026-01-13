@@ -12,6 +12,7 @@ import { coerceRenderType, resolveFormatSize } from "./params.js";
 import { drawBusRoute } from "./drawBusRoute.js";
 import { drawSubwayRoute } from "./drawSubwayRoute.js";
 import { drawStation } from "./drawStation.js";
+import { drawBusPoster } from "./drawBusPoster.js";
 
 import type { OpenTypeFont } from "./fonts.js";
 
@@ -28,20 +29,6 @@ export type RenderInput = {
   resources: RenderResources;
   type: RenderType;
 };
-
-export function drawBusPoster({
-  params,
-  mbtaData,
-  resources,
-}: {
-  params: BusPosterParams;
-  mbtaData: any;
-  resources: RenderResources;
-}) {
-  void params;
-  void mbtaData;
-  void resources;
-}
 
 // Browser-friendly rendering: caller provides a canvas OR we create one.
 // For CLI (Node), we’ll use paper-jsdom in the CLI package and still call this.

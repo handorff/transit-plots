@@ -146,7 +146,7 @@ const busPosterAreas = [
   { type: "neighborhood", name: "Allston" },
   { type: "neighborhood", name: "Brighton" },
   { type: "neighborhood", name: "Allston/Brighton" },
-  { type: "neighborhood", name: "Jamaica Plain" }
+  { type: "neighborhood", name: "Jamaica Plain" },
 ];
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
@@ -342,8 +342,7 @@ function renderParamFields(type: string) {
   }
 
   if (resolved === "bus-poster") {
-    const selectedAreaType =
-      readString("areaType") ?? busPosterAreas[0]?.type ?? "municipality";
+    const selectedAreaType = readString("areaType") ?? busPosterAreas[0]?.type ?? "municipality";
     const matchingAreas = busPosterAreas.filter((area) => area.type === selectedAreaType);
     const fallbackAreaName = matchingAreas[0]?.name ?? "";
     const selectedAreaName = readString("areaName") ?? fallbackAreaName;

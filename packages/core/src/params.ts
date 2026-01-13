@@ -64,7 +64,9 @@ export const DEFAULT_BUS_POSTER_PARAMS: BusPosterParams = {
 // very small validation/coercion helper
 export function coerceParams(
   type: RenderType,
-  partial: Partial<BusRouteParams & SubwayRouteParams & StationParams & BusPosterParams & BaseParams>
+  partial: Partial<
+    BusRouteParams & SubwayRouteParams & StationParams & BusPosterParams & BaseParams
+  >
 ): RenderParamsByType[RenderType] {
   switch (type) {
     case "bus-route":

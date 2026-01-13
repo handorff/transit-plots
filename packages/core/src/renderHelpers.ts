@@ -229,7 +229,7 @@ type TextSize2 = {
 type StyleOpts2 = {
   font: any;
   isFilled: boolean;
-  hatchSpacing: number;
+  hatchSpacing?: number;
   color?: string;
 };
 
@@ -404,7 +404,11 @@ export function drawFullLines(
   }
 }
 
-function centerPaths(paths: paper.PathItem[], position: [number, number], size: [number, number]) {
+export function centerPaths(
+  paths: paper.PathItem[],
+  position: [number, number],
+  size: [number, number]
+) {
   const [x, y] = position;
   const [w, h] = size;
 

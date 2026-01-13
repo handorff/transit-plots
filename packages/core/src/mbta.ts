@@ -89,9 +89,75 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     areaType: "municipality" | "neighborhood",
     areaName: string
   ): Promise<BusPosterResponse> {
-    void areaType;
-    void areaName;
-    return {};
+    console.log(areaType);
+    console.log(areaName);
+
+    const DIRECTION_ID = 0;
+
+    const routeQueryParam = ["62", "67", "76", "77", "78", "80", "87", "95", "350"].join(",");
+    const json = await getJson("/routes", {
+      "filter[id]": routeQueryParam,
+      sort: "sort_order",
+      include: "route_patterns.representative_trip.shape",
+    });
+
+    const data = Array.isArray(json?.data) ? json.data : [];
+    const included = Array.isArray(json?.included) ? json.included : [];
+
+    const getShapePolyline = (routePattern: any): string => {
+      const repTripId = routePattern?.relationships?.representative_trip?.data?.id;
+      if (!repTripId) {
+        throw new Error(
+          `route_pattern missing representative_trip for routePattern=${routePattern.id}`
+        );
+      }
+
+      const trip = included.find((x: any) => x?.type === "trip" && x?.id === repTripId);
+      if (!trip) {
+        throw new Error(
+          `Could not find included trip id=${repTripId} for routePatternId=${routePattern.id}`
+        );
+      }
+
+      const shapeId = trip?.relationships?.shape?.data?.id;
+      if (!shapeId) {
+        throw new Error(`Trip id=${repTripId} missing shape relationship`);
+      }
+
+      const shape = included.find((x: any) => x?.type === "shape" && x?.id === shapeId);
+      const polyline = shape?.attributes?.polyline;
+      if (typeof polyline !== "string" || polyline.length === 0) {
+        throw new Error(`Shape id=${shapeId} missing polyline attribute`);
+      }
+
+      return polyline;
+    };
+
+    return data.map((routeData: any) => {
+      const route = routeData?.attributes?.short_name;
+      const description = routeData?.attributes?.long_name;
+
+      const routeId = routeData.id;
+      const routePatternIds = routeData?.relationships?.route_patterns?.data.map(
+        (rp: any) => rp.id
+      );
+      const routePatterns = routePatternIds
+        .map((routePatternId: string) =>
+          included.find((item: any) => {
+            const { id, type } = item;
+            return id === routePatternId && type == "route_pattern";
+          })
+        )
+        .filter((routePattern: any) => {
+          return (
+            routePattern?.attributes?.typicality <= 2 &&
+            routePattern?.attributes?.direction_id === DIRECTION_ID
+          );
+        });
+
+      const encodedPolylines = routePatterns.map((rp: any) => getShapePolyline(rp));
+      return { route, description, encodedPolylines };
+    });
   }
 
   async function fetchSubwayRouteData(routeId: string): Promise<SubwayRouteResponse> {
