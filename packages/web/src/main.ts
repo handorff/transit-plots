@@ -619,6 +619,11 @@ els.paramFields.addEventListener("input", (event) => {
     if (selected) scheduleRender();
     return;
   }
+  if (target instanceof HTMLSelectElement && target.id === "areaType") {
+    renderParamFields(els.renderType.value);
+    scheduleRender();
+    return;
+  }
   scheduleRender();
 });
 els.paramFields.addEventListener("change", (event) => {
@@ -626,6 +631,11 @@ els.paramFields.addEventListener("change", (event) => {
   if (target instanceof HTMLInputElement && target.id === "stationSearch") {
     const selected = updateStationSelection(target.value);
     if (selected) scheduleRender();
+    return;
+  }
+  if (target instanceof HTMLSelectElement && target.id === "areaType") {
+    renderParamFields(els.renderType.value);
+    scheduleRender();
     return;
   }
   scheduleRender();
