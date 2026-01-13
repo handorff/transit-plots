@@ -127,9 +127,26 @@ let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
 const busPosterAreas = [
-  // TODO: replace with municipalities/neighborhoods.
-  { type: "municipality", name: "Placeholder Municipality" },
-  { type: "neighborhood", name: "Placeholder Neighborhood" },
+  { type: "municipality", name: "Arlington" },
+  { type: "municipality", name: "Belmont" },
+  { type: "municipality", name: "Brookline" },
+  { type: "municipality", name: "Cambridge" },
+  { type: "municipality", name: "Everett" },
+  { type: "municipality", name: "Lynn" },
+  { type: "municipality", name: "Malden" },
+  { type: "municipality", name: "Medford" },
+  { type: "municipality", name: "Milton" },
+  { type: "municipality", name: "Newton" },
+  { type: "municipality", name: "Quincy" },
+  { type: "municipality", name: "Revere" },
+  { type: "municipality", name: "Saugus" },
+  { type: "municipality", name: "Somerville" },
+  { type: "municipality", name: "Waltham" },
+  { type: "municipality", name: "Watertown" },
+  { type: "neighborhood", name: "Allston" },
+  { type: "neighborhood", name: "Brighton" },
+  { type: "neighborhood", name: "Allston/Brighton" },
+  { type: "neighborhood", name: "Jamaica Plain" }
 ];
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
