@@ -1,5 +1,6 @@
 import type {
   BusRouteParams,
+  BusPosterParams,
   OpenTypeFont,
   StationParams,
   SubwayRouteParams,
@@ -125,6 +126,11 @@ const els = {
 let lastSvg = "";
 let renderToken = 0;
 let renderTimer: number | undefined;
+const busPosterAreas = [
+  // TODO: replace with municipalities/neighborhoods.
+  { type: "municipality", name: "Placeholder Municipality" },
+  { type: "neighborhood", name: "Placeholder Neighborhood" },
+];
 const busRouteIdsState = {
   status: "idle" as "idle" | "loading" | "loaded" | "error",
   data: [] as { id: string; shortName: string }[],
@@ -318,6 +324,44 @@ function renderParamFields(type: string) {
     return;
   }
 
+  if (resolved === "bus-poster") {
+    const selectedAreaType =
+      readString("areaType") ?? busPosterAreas[0]?.type ?? "municipality";
+    const matchingAreas = busPosterAreas.filter((area) => area.type === selectedAreaType);
+    const fallbackAreaName = matchingAreas[0]?.name ?? "";
+    const selectedAreaName = readString("areaName") ?? fallbackAreaName;
+    const resolvedAreaName = matchingAreas.some((area) => area.name === selectedAreaName)
+      ? selectedAreaName
+      : fallbackAreaName;
+    els.paramFields.innerHTML = `
+      <div class="section-title">Parameters</div>
+      <div class="field">
+        <label for="areaType">Area type</label>
+        <select id="areaType">
+          ${["municipality", "neighborhood"]
+            .map(
+              (type) =>
+                `<option value="${type}" ${type === selectedAreaType ? "selected" : ""}>${type}</option>`
+            )
+            .join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label for="areaName">Area name</label>
+        <select id="areaName">
+          ${matchingAreas
+            .map(
+              (area) =>
+                `<option value="${area.name}" ${area.name === resolvedAreaName ? "selected" : ""}>${area.name}</option>`
+            )
+            .join("")}
+        </select>
+      </div>
+      ${commonFields}
+    `;
+    return;
+  }
+
   els.paramFields.innerHTML = `
     <div class="section-title">Parameters</div>
     ${commonFields}
@@ -472,6 +516,12 @@ async function doRender() {
         return;
       }
     }
+    if (renderType === "bus-poster") {
+      if (!readString("areaType") || !readString("areaName")) {
+        els.status.textContent = "Select a municipality or neighborhood.";
+        return;
+      }
+    }
 
     const fallbackRouteId =
       renderType === "bus-route"
@@ -483,6 +533,8 @@ async function doRender() {
       routeId: readString("routeId") || fallbackRouteId,
       stopId: readString("stopId"),
       directionId: readNumber("directionId"),
+      areaType: readString("areaType"),
+      areaName: readString("areaName"),
       format: readString("format"),
     });
 
@@ -498,6 +550,12 @@ async function doRender() {
     }
     if (renderType === "station") {
       mbtaData = await client.fetchStationData((params as StationParams).stopId);
+    }
+    if (renderType === "bus-poster") {
+      mbtaData = await client.fetchBusPosterData(
+        (params as BusPosterParams).areaType,
+        (params as BusPosterParams).areaName
+      );
     }
 
     els.status.textContent = "Rendering…";
@@ -544,6 +602,11 @@ els.paramFields.addEventListener("input", (event) => {
     if (selected) scheduleRender();
     return;
   }
+  if (target instanceof HTMLSelectElement && target.id === "areaType") {
+    renderParamFields(els.renderType.value);
+    scheduleRender();
+    return;
+  }
   scheduleRender();
 });
 els.paramFields.addEventListener("change", (event) => {
@@ -551,6 +614,11 @@ els.paramFields.addEventListener("change", (event) => {
   if (target instanceof HTMLInputElement && target.id === "stationSearch") {
     const selected = updateStationSelection(target.value);
     if (selected) scheduleRender();
+    return;
+  }
+  if (target instanceof HTMLSelectElement && target.id === "areaType") {
+    renderParamFields(els.renderType.value);
+    scheduleRender();
     return;
   }
   scheduleRender();
