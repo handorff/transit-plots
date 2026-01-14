@@ -89,12 +89,35 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
     areaType: "municipality" | "neighborhood",
     areaName: string
   ): Promise<BusPosterResponse> {
-    console.log(areaType);
-    console.log(areaName);
-
     const DIRECTION_ID = 0;
 
-    const routeQueryParam = ["62", "67", "76", "77", "78", "80", "87", "95", "350"].join(",");
+    let routeIds: string[] = [];
+    if (areaType === "municipality") {
+      const stopsJson = await getJson("/stops", { "filter[location_type]": "0,1" });
+      const stops = Array.isArray(stopsJson?.data) ? stopsJson.data : [];
+      const municipalityStopIds = stops
+        .filter((stop: any) => stop?.attributes?.municipality === areaName)
+        .map((stop: any) => stop.id);
+
+      if (municipalityStopIds.length === 0) {
+        return [];
+      }
+
+      const routesJson = await getJson("/routes", {
+        "filter[stop]": municipalityStopIds.join(","),
+        "filter[type]": "3",
+      });
+      const routes = Array.isArray(routesJson?.data) ? routesJson.data : [];
+      routeIds = Array.from(new Set(routes.map((route: any) => route.id)));
+    } else {
+      routeIds = ["62", "67", "76", "77", "78", "80", "87", "95", "350"];
+    }
+
+    if (routeIds.length === 0) {
+      return [];
+    }
+
+    const routeQueryParam = routeIds.join(",");
     const json = await getJson("/routes", {
       "filter[id]": routeQueryParam,
       sort: "sort_order",
