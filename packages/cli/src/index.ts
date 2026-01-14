@@ -37,6 +37,7 @@ const cli = yargs(hideBin(process.argv))
   .option("directionId", { type: "number" })
   .option("areaType", { type: "string", choices: ["municipality", "neighborhood"] })
   .option("areaName", { type: "string" })
+  .option("neighborhoodsGeoJson", { type: "string" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
@@ -85,7 +86,12 @@ const params = coerceParams(renderType, {
 });
 
 const apiKey = process.env.MBTA_API_KEY;
-const client = createMbtaClient({ apiKey });
+const neighborhoodsGeoJson = argv.neighborhoodsGeoJson
+  ? JSON.parse(
+      fs.readFileSync(path.resolve(argv.neighborhoodsGeoJson), "utf8")
+    )
+  : undefined;
+const client = createMbtaClient({ apiKey, neighborhoodsGeoJson });
 
 let mbtaData: unknown = null;
 if (renderType === "bus-route") {
