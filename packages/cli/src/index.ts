@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -37,7 +38,6 @@ const cli = yargs(hideBin(process.argv))
   .option("directionId", { type: "number" })
   .option("areaType", { type: "string", choices: ["municipality", "neighborhood"] })
   .option("areaName", { type: "string" })
-  .option("neighborhoodsGeoJson", { type: "string" })
   .option("format", { type: "string", choices: ["notebook", "print"], demandOption: true })
   .option("type", { choices: [...RENDER_TYPES], demandOption: true })
   .option("out", { type: "string", default: "out.svg" })
@@ -86,10 +86,10 @@ const params = coerceParams(renderType, {
 });
 
 const apiKey = process.env.MBTA_API_KEY;
-const neighborhoodsGeoJson = argv.neighborhoodsGeoJson
-  ? JSON.parse(
-      fs.readFileSync(path.resolve(argv.neighborhoodsGeoJson), "utf8")
-    )
+const here = path.dirname(fileURLToPath(import.meta.url));
+const neighborhoodsGeoJsonPath = path.resolve(here, "../../web/public/neighborhoods.geojson");
+const neighborhoodsGeoJson = fs.existsSync(neighborhoodsGeoJsonPath)
+  ? JSON.parse(fs.readFileSync(neighborhoodsGeoJsonPath, "utf8"))
   : undefined;
 const client = createMbtaClient({ apiKey, neighborhoodsGeoJson });
 
