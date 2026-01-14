@@ -67,6 +67,9 @@ const cli = yargs(hideBin(process.argv))
       if (!argv.areaName) {
         throw new Error("areaName is required when type is bus-poster");
       }
+      if (argv.format !== "print") {
+        throw new Error("format must be print when type is bus-poster");
+      }
     }
     return true;
   })

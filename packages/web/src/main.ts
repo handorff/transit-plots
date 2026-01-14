@@ -264,12 +264,17 @@ function buildStationOptions(state: typeof stationsState, selectedStopId: string
 
 function renderParamFields(type: string) {
   const resolved = coerceRenderType(type);
-  const commonFields = `
+  const selectedFormat = readString("format") ?? "notebook";
+  const buildFormatField = (formats: string[], disabled = false, selection = selectedFormat) => `
     <div class="field">
       <label for="format">Format</label>
-      <select id="format">
-        <option value="notebook" selected>notebook</option>
-        <option value="print">print</option>
+      <select id="format" ${disabled ? "disabled" : ""}>
+        ${formats
+          .map(
+            (format) =>
+              `<option value="${format}" ${format === selection ? "selected" : ""}>${format}</option>`
+          )
+          .join("")}
       </select>
     </div>
   `;
@@ -296,7 +301,7 @@ function renderParamFields(type: string) {
           <option value="1" selected>1</option>
         </select>
       </div>
-      ${commonFields}
+      ${buildFormatField(["notebook", "print"])}
     `;
     return;
   }
@@ -316,7 +321,7 @@ function renderParamFields(type: string) {
           ${routeOptions.options}
         </select>
       </div>
-      ${commonFields}
+      ${buildFormatField(["notebook", "print"])}
     `;
     return;
   }
@@ -343,7 +348,7 @@ function renderParamFields(type: string) {
         <input id="stopId" type="hidden" value="${stationOptions.selectedId}" />
         <p class="helper">Stop ID: <span id="stopIdLabel">${stationOptions.selectedId}</span></p>
       </div>
-      ${commonFields}
+      ${buildFormatField(["notebook", "print"])}
     `;
     return;
   }
@@ -380,14 +385,14 @@ function renderParamFields(type: string) {
             .join("")}
         </select>
       </div>
-      ${commonFields}
+      ${buildFormatField(["print"], true, "print")}
     `;
     return;
   }
 
   els.paramFields.innerHTML = `
     <div class="section-title">Parameters</div>
-    ${commonFields}
+    ${buildFormatField(["notebook", "print"])}
   `;
 }
 
