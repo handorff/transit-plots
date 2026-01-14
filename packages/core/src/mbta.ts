@@ -1,6 +1,7 @@
 export type MbtaClientOptions = {
   apiKey?: string;
   baseUrl?: string; // default v3
+  neighborhoodsGeoJson?: NeighborhoodGeoJson;
 };
 
 export type BusRouteResponse = any;
@@ -8,10 +9,22 @@ export type BusPosterResponse = any;
 export type SubwayRouteResponse = any;
 export type StationResponse = any;
 export type StationListItem = { id: string; name: string };
+export type NeighborhoodGeoJson = {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties?: Record<string, unknown> | null;
+    geometry?: {
+      type: "Polygon" | "MultiPolygon";
+      coordinates: number[][][] | number[][][][];
+    } | null;
+  }>;
+};
 
 export function createMbtaClient(opts: MbtaClientOptions = {}) {
   const baseUrl = opts.baseUrl ?? "https://api-v3.mbta.com";
   const headers: Record<string, string> = {};
+  const neighborhoodsGeoJson = opts.neighborhoodsGeoJson;
 
   if (opts.apiKey) headers["x-api-key"] = opts.apiKey;
 
@@ -110,7 +123,78 @@ export function createMbtaClient(opts: MbtaClientOptions = {}) {
       const routes = Array.isArray(routesJson?.data) ? routesJson.data : [];
       routeIds = Array.from(new Set(routes.map((route: any) => route.id)));
     } else {
-      routeIds = ["62", "67", "76", "77", "78", "80", "87", "95", "350"];
+      if (!neighborhoodsGeoJson) {
+        routeIds = ["62", "67", "76", "77", "78", "80", "87", "95", "350"];
+      } else {
+        const normalizedAreaName = areaName.trim().toLowerCase();
+        const featureMatches = neighborhoodsGeoJson.features.filter((feature) => {
+          const properties = feature.properties ?? {};
+          return Object.values(properties).some((value) => {
+            if (typeof value !== "string") return false;
+            return value.trim().toLowerCase() === normalizedAreaName;
+          });
+        });
+
+        if (featureMatches.length === 0) {
+          return [];
+        }
+
+        const isPointInRing = (point: [number, number], ring: number[][]) => {
+          const [x, y] = point;
+          let inside = false;
+          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i];
+            const [xj, yj] = ring[j];
+            const intersects =
+              yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+            if (intersects) inside = !inside;
+          }
+          return inside;
+        };
+
+        const isPointInPolygon = (point: [number, number], rings: number[][][]) => {
+          if (rings.length === 0) return false;
+          if (!isPointInRing(point, rings[0])) return false;
+          return !rings.slice(1).some((hole) => isPointInRing(point, hole));
+        };
+
+        const isPointInGeometry = (point: [number, number], geometry: any) => {
+          if (!geometry) return false;
+          if (geometry.type === "Polygon") {
+            return isPointInPolygon(point, geometry.coordinates);
+          }
+          if (geometry.type === "MultiPolygon") {
+            return geometry.coordinates.some((polygon: number[][][]) =>
+              isPointInPolygon(point, polygon)
+            );
+          }
+          return false;
+        };
+
+        const stopsJson = await getJson("/stops", { "filter[location_type]": "0,1" });
+        const stops = Array.isArray(stopsJson?.data) ? stopsJson.data : [];
+        const neighborhoodStopIds = stops
+          .filter((stop: any) => {
+            const latitude = stop?.attributes?.latitude;
+            const longitude = stop?.attributes?.longitude;
+            if (typeof latitude !== "number" || typeof longitude !== "number") return false;
+            return featureMatches.some((feature) =>
+              isPointInGeometry([longitude, latitude], feature.geometry)
+            );
+          })
+          .map((stop: any) => stop.id);
+
+        if (neighborhoodStopIds.length === 0) {
+          return [];
+        }
+
+        const routesJson = await getJson("/routes", {
+          "filter[stop]": neighborhoodStopIds.join(","),
+          "filter[type]": "3",
+        });
+        const routes = Array.isArray(routesJson?.data) ? routesJson.data : [];
+        routeIds = Array.from(new Set(routes.map((route: any) => route.id)));
+      }
     }
 
     if (routeIds.length === 0) {
