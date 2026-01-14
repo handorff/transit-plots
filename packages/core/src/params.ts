@@ -88,6 +88,7 @@ export function coerceParams(
     case "bus-poster":
       return {
         ...coerceBaseParams(partial),
+        format: "print",
         areaType:
           partial.areaType === "neighborhood" ? "neighborhood" : DEFAULT_BUS_POSTER_PARAMS.areaType,
         areaName: String(partial.areaName ?? DEFAULT_BUS_POSTER_PARAMS.areaName),
