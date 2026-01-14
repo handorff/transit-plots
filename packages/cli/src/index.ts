@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -85,7 +86,12 @@ const params = coerceParams(renderType, {
 });
 
 const apiKey = process.env.MBTA_API_KEY;
-const client = createMbtaClient({ apiKey });
+const here = path.dirname(fileURLToPath(import.meta.url));
+const neighborhoodsGeoJsonPath = path.resolve(here, "../../web/public/neighborhoods.geojson");
+const neighborhoodsGeoJson = fs.existsSync(neighborhoodsGeoJsonPath)
+  ? JSON.parse(fs.readFileSync(neighborhoodsGeoJsonPath, "utf8"))
+  : undefined;
+const client = createMbtaClient({ apiKey, neighborhoodsGeoJson });
 
 let mbtaData: unknown = null;
 if (renderType === "bus-route") {

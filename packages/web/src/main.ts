@@ -1,6 +1,7 @@
 import type {
   BusRouteParams,
   BusPosterParams,
+  NeighborhoodGeoJson,
   OpenTypeFont,
   StationParams,
   SubwayRouteParams,
@@ -14,9 +15,12 @@ import {
 } from "@transit-plots/core";
 
 import { loadInterBold, loadInterRegular } from "./loadFont";
+import { loadNeighborhoodsGeoJson } from "./loadNeighborhoodsGeoJson";
 
 let interBold: OpenTypeFont;
 let interRegular: OpenTypeFont;
+let neighborhoodsGeoJson: NeighborhoodGeoJson | undefined;
+let neighborhoodsGeoJsonPending: Promise<void> | undefined;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
@@ -178,7 +182,10 @@ function scheduleRender() {
 }
 
 function makeMbtaClient() {
-  return createMbtaClient({ apiKey: els.apiKey.value || undefined });
+  return createMbtaClient({
+    apiKey: els.apiKey.value || undefined,
+    neighborhoodsGeoJson,
+  });
 }
 
 function resolveRouteIdSelection(state: typeof busRouteIdsState) {
@@ -492,6 +499,24 @@ async function ensureFonts() {
   return { interBold, interRegular };
 }
 
+async function ensureNeighborhoodsGeoJson() {
+  if (neighborhoodsGeoJsonPending) {
+    await neighborhoodsGeoJsonPending;
+    return;
+  }
+  neighborhoodsGeoJsonPending = (async () => {
+    try {
+      neighborhoodsGeoJson = await loadNeighborhoodsGeoJson();
+    } catch (error) {
+      neighborhoodsGeoJson = undefined;
+      console.warn("Failed to load neighborhoods GeoJSON", error);
+    } finally {
+      neighborhoodsGeoJsonPending = undefined;
+    }
+  })();
+  await neighborhoodsGeoJsonPending;
+}
+
 async function doRender() {
   const token = ++renderToken;
   const fonts = await ensureFonts();
@@ -499,7 +524,6 @@ async function doRender() {
 
   els.status.textContent = "Fetching…";
   const renderType = coerceRenderType(els.renderType.value);
-  const client = makeMbtaClient();
 
   try {
     if (renderType === "bus-route") {
@@ -533,6 +557,7 @@ async function doRender() {
       }
     }
     if (renderType === "bus-poster") {
+      await ensureNeighborhoodsGeoJson();
       if (!readString("areaType") || !readString("areaName")) {
         els.status.textContent = "Select a municipality or neighborhood.";
         return;
@@ -554,6 +579,7 @@ async function doRender() {
       format: readString("format"),
     });
 
+    const client = makeMbtaClient();
     let mbtaData: unknown = null;
     if (renderType === "bus-route") {
       mbtaData = await client.fetchBusRouteData(
