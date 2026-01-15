@@ -1,4 +1,4 @@
-export const RENDER_TYPES = ["bus-poster", "bus-route", "subway-route", "station"] as const;
+export const RENDER_TYPES = ["bus-route", "subway-route", "station", "bus-poster"] as const;
 export type RenderType = (typeof RENDER_TYPES)[number];
 
 export type BaseParams = {
